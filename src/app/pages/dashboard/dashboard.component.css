@@ -1,0 +1,49 @@
+/* Dashboard specific styles */
+.dashboard-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  transition: transform 0.2s ease-in-out;
+}
+
+.dashboard-card:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+/* Animation for loading state */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom scrollbar for recent activity */
+.recent-activity::-webkit-scrollbar {
+  width: 4px;
+}
+
+.recent-activity::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.recent-activity::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.recent-activity::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

@@ -1,0 +1,51 @@
+<!-- Main Layout Container -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="flex h-screen">
+    <!-- Mobile Sidebar Overlay -->
+    <div
+      *ngIf="isMobile && sidebarOpen"
+      class="fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-300"
+      (click)="closeMobileSidebar()"
+    ></div>
+
+    <!-- Sidebar -->
+    <div
+      class="fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0"
+      [class.-translate-x-full]="isMobile && !sidebarOpen"
+      [class.translate-x-0]="!isMobile || sidebarOpen"
+    >
+      <app-sidebar></app-sidebar>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden lg:ml-0">
+      <!-- Top Navigation -->
+      <header class="bg-white dark:bg-gray-800 shadow-sm">
+        <div class="flex items-center justify-between">
+          <!-- Mobile Menu Button -->
+          <button
+            *ngIf="isMobile"
+            (click)="toggleMobileSidebar()"
+            class="p-4 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"
+          >
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+
+          <!-- Navbar Component -->
+          <div class="flex-1">
+            <app-navbar></app-navbar>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main
+        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900"
+      >
+        <div class="container mx-auto px-6 py-8">
+          <router-outlet></router-outlet>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

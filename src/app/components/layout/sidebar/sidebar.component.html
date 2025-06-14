@@ -1,0 +1,119 @@
+<!-- Sidebar -->
+<div
+  class="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300"
+  [class.w-64]="!isCollapsed"
+  [class.w-16]="isCollapsed"
+>
+  <!-- Sidebar Header -->
+  <div
+    class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700"
+  >
+    <div class="flex items-center space-x-2" *ngIf="!isCollapsed">
+      <div
+        class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
+      <span class="text-xl font-bold text-gray-800 dark:text-white"
+        >SmartPromo</span
+      >
+    </div>
+    <button
+      (click)="toggleSidebar()"
+      class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+    >
+      <i class="fas fa-bars text-gray-600 dark:text-gray-300"></i>
+    </button>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+    <ng-container *ngFor="let item of menuItems">
+      <!-- Menu Item without children -->
+      <div *ngIf="!item.children">
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-r-2 border-primary-600"
+          class="flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
+        >
+          <i
+            [class]="item.icon"
+            class="flex-shrink-0 w-5 h-5 mr-3 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+          ></i>
+          <span *ngIf="!isCollapsed" class="transition-opacity duration-200">{{
+            item.label
+          }}</span>
+        </a>
+      </div>
+
+      <!-- Menu Item with children -->
+      <div *ngIf="item.children">
+        <button
+          (click)="toggleSubmenu(item)"
+          class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
+        >
+          <div class="flex items-center">
+            <i
+              [class]="item.icon"
+              class="flex-shrink-0 w-5 h-5 mr-3 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+            ></i>
+            <span
+              *ngIf="!isCollapsed"
+              class="transition-opacity duration-200"
+              >{{ item.label }}</span
+            >
+          </div>
+          <i
+            *ngIf="!isCollapsed"
+            class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200"
+            [class.rotate-180]="item.expanded"
+          ></i>
+        </button>
+
+        <!-- Submenu -->
+        <div
+          *ngIf="item.expanded && !isCollapsed"
+          class="ml-8 mt-2 space-y-1 animate-slide-down"
+        >
+          <a
+            *ngFor="let child of item.children"
+            [routerLink]="child.route"
+            routerLinkActive="bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300"
+            class="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+          >
+            <i [class]="child.icon" class="flex-shrink-0 w-4 h-4 mr-2"></i>
+            {{ child.label }}
+          </a>
+        </div>
+      </div>
+    </ng-container>
+  </nav>
+
+  <!-- Sidebar Footer -->
+  <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex items-center space-x-3" *ngIf="!isCollapsed">
+      <div
+        class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center"
+      >
+        <i class="fas fa-user text-gray-600 dark:text-gray-300 text-sm"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p
+          class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate"
+        >
+          Admin User
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+          admin&#64;smartpromo.com
+        </p>
+      </div>
+    </div>
+    <div class="flex justify-center" *ngIf="isCollapsed">
+      <div
+        class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center"
+      >
+        <i class="fas fa-user text-gray-600 dark:text-gray-300 text-sm"></i>
+      </div>
+    </div>
+  </div>
+</div>

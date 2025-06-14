@@ -1,0 +1,174 @@
+<!-- Top Navbar -->
+<nav
+  class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+>
+  <div class="flex items-center justify-between">
+    <!-- Page Title -->
+    <div class="flex items-center">
+      <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">
+        {{ pageTitle }}
+      </h1>
+    </div>
+
+    <!-- Right Side - Actions -->
+    <div class="flex items-center space-x-4">
+      <!-- Search Bar (Optional) -->
+      <div class="hidden md:block">
+        <div class="relative">
+          <div
+            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+          >
+            <i class="fas fa-search text-gray-400"></i>
+          </div>
+          <input
+            type="text"
+            placeholder="Search..."
+            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-64 pl-10 p-2.5"
+          />
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button
+        (click)="toggleTheme()"
+        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        title="Toggle theme"
+      >
+        <i class="fas fa-sun" *ngIf="isDarkMode"></i>
+        <i class="fas fa-moon" *ngIf="!isDarkMode"></i>
+      </button>
+
+      <!-- Notifications -->
+      <div class="relative">
+        <button
+          (click)="toggleNotifications()"
+          class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        >
+          <i class="fas fa-bell text-lg"></i>
+          <span
+            *ngIf="unreadCount > 0"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
+          >
+            {{ unreadCount }}
+          </span>
+        </button>
+
+        <!-- Notifications Dropdown -->
+        <div
+          *ngIf="isNotificationOpen"
+          class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-slide-down"
+        >
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+              Notifications
+            </h3>
+          </div>
+          <div class="max-h-96 overflow-y-auto">
+            <div
+              *ngFor="let notification of notifications"
+              (click)="markAsRead(notification.id)"
+              class="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
+            >
+              <div class="flex items-start space-x-3">
+                <div
+                  class="w-2 h-2 bg-blue-500 rounded-full mt-2"
+                  *ngIf="notification.unread"
+                ></div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-800 dark:text-white">
+                    {{ notification.title }}
+                  </p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {{ notification.message }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                    {{ notification.time }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="p-4 text-center border-t border-gray-200 dark:border-gray-700"
+          >
+            <a
+              href="#"
+              class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
+            >
+              View all notifications
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Dropdown -->
+      <div class="relative">
+        <button
+          (click)="toggleProfile()"
+          class="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        >
+          <div
+            class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center"
+          >
+            <i class="fas fa-user text-white text-sm"></i>
+          </div>
+          <div class="hidden md:block text-left">
+            <p class="text-sm font-medium text-gray-800 dark:text-white">
+              Admin User
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Administrator
+            </p>
+          </div>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </button>
+
+        <!-- Profile Dropdown Menu -->
+        <div
+          *ngIf="isProfileOpen"
+          class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-slide-down"
+        >
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <p class="text-sm font-medium text-gray-800 dark:text-white">
+              Admin User
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              admin&#64;smartpromo.com
+            </p>
+          </div>
+          <div class="py-2">
+            <a
+              href="#"
+              class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <i class="fas fa-user-cog mr-3"></i>
+              Profile Settings
+            </a>
+            <a
+              href="#"
+              class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <i class="fas fa-cog mr-3"></i>
+              Preferences
+            </a>
+            <a
+              href="#"
+              class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <i class="fas fa-question-circle mr-3"></i>
+              Help & Support
+            </a>
+            <hr class="my-2 border-gray-200 dark:border-gray-600" />
+            <a
+              href="#"
+              class="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <i class="fas fa-sign-out-alt mr-3"></i>
+              Sign Out
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
