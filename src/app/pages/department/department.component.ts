@@ -26,6 +26,14 @@ export class DepartmentComponent implements OnInit {
   selectedFile: File | null = null;
   importMessage: string | null = null;
 
+  // Filtres avancés
+  filterCode = '';
+  filterLibelle = '';
+  filterTypeDepot = '';
+
+  // Import modal
+  isImportModalOpen = false;
+
   constructor(private depotService: DepotService) {}
 
   ngOnInit() {
@@ -47,16 +55,31 @@ export class DepartmentComponent implements OnInit {
     });
   }
   filterDepots() {
-    if (!this.searchTerm) {
-      this.filteredDepots = this.depots;
-    } else {
-      this.filteredDepots = this.depots.filter(
+    let filtered = this.depots;
+    if (this.searchTerm) {
+      filtered = filtered.filter(
         (depot) =>
           depot.libelle.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           depot.code.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           depot.typeDepot?.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
+    if (this.filterCode) {
+      filtered = filtered.filter((depot) =>
+        depot.code.toLowerCase().includes(this.filterCode.toLowerCase())
+      );
+    }
+    if (this.filterLibelle) {
+      filtered = filtered.filter((depot) =>
+        depot.libelle.toLowerCase().includes(this.filterLibelle.toLowerCase())
+      );
+    }
+    if (this.filterTypeDepot) {
+      filtered = filtered.filter((depot) =>
+        depot.typeDepot?.trim().toLowerCase() === this.filterTypeDepot.trim().toLowerCase()
+      );
+    }
+    this.filteredDepots = filtered;
   }
 
   openModal(depot?: Depot) {
@@ -110,6 +133,17 @@ export class DepartmentComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
+  openImportModal() {
+    this.isImportModalOpen = true;
+    this.selectedFile = null;
+    this.importMessage = null;
+  }
+  closeImportModal() {
+    this.isImportModalOpen = false;
+    this.selectedFile = null;
+    this.importMessage = null;
+  }
+
   importDepots() {
     if (this.selectedFile) {
       this.depotService.importDepots(this.selectedFile).subscribe({
@@ -117,6 +151,7 @@ export class DepartmentComponent implements OnInit {
           this.importMessage = response?.message || 'Importation réussie !';
           this.loadDepots();
           this.selectedFile = null;
+          this.closeImportModal();
         },
         error: (error) => {
           this.importMessage = error?.error?.error || 'Erreur lors de l\'importation.';

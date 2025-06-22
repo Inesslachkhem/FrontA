@@ -26,6 +26,15 @@ export class EtablissementComponent implements OnInit {
   selectedFile: File | null = null;
   importMessage: string | null = null;
 
+  // Import modal
+  isImportModalOpen = false;
+
+  // Filtres avancés
+  filterCode = '';
+  filterLibelle = '';
+  filterVille = '';
+  filterType = '';
+
   constructor(private etablissementService: EtablissementService) {}
 
   ngOnInit() {
@@ -47,16 +56,36 @@ export class EtablissementComponent implements OnInit {
     });
   }
   filterEtablissements() {
-    if (!this.searchTerm) {
-      this.filteredEtablissements = this.etablissements;
-    } else {
-      this.filteredEtablissements = this.etablissements.filter(
+    let filtered = this.etablissements;
+    if (this.searchTerm) {
+      filtered = filtered.filter(
         (etab) =>
           etab.libelle.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           etab.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           etab.code?.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
+    if (this.filterCode) {
+      filtered = filtered.filter((etab) =>
+        etab.code?.toLowerCase().includes(this.filterCode.toLowerCase())
+      );
+    }
+    if (this.filterLibelle) {
+      filtered = filtered.filter((etab) =>
+        etab.libelle.toLowerCase().includes(this.filterLibelle.toLowerCase())
+      );
+    }
+    if (this.filterVille) {
+      filtered = filtered.filter((etab) =>
+        etab.ville?.toLowerCase().includes(this.filterVille.toLowerCase())
+      );
+    }
+    if (this.filterType) {
+      filtered = filtered.filter((etab) =>
+        etab.type?.trim().toLowerCase() === this.filterType.trim().toLowerCase()
+      );
+    }
+    this.filteredEtablissements = filtered;
   }
 
   openModal(etablissement?: Etablissement) {
@@ -117,6 +146,17 @@ export class EtablissementComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
+  openImportModal() {
+    this.isImportModalOpen = true;
+    this.selectedFile = null;
+    this.importMessage = null;
+  }
+  closeImportModal() {
+    this.isImportModalOpen = false;
+    this.selectedFile = null;
+    this.importMessage = null;
+  }
+
   importEtablissements() {
     if (this.selectedFile) {
       this.etablissementService
@@ -126,6 +166,7 @@ export class EtablissementComponent implements OnInit {
             this.importMessage = response?.message || 'Importation réussie !';
             this.loadEtablissements();
             this.selectedFile = null;
+            this.closeImportModal();
           },
           error: (error) => {
             this.importMessage = error?.error?.error || 'Erreur lors de l\'importation.';

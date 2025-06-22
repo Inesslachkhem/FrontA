@@ -1,7 +1,7 @@
 <!-- Etablissements Management -->
 <div class="space-y-6">
   <!-- Header -->
-  <div class="flex justify-between items-center">
+  <div class="flex justify-between items-center mb-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         Etablissements Management
@@ -10,13 +10,22 @@
         Manage your establishments and business locations
       </p>
     </div>
-    <button
-      (click)="openModal()"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-    >
-      <i class="fas fa-plus"></i>
-      <span>Add Etablissement</span>
-    </button>
+    <div class="flex gap-2">
+      <button
+        (click)="openModal()"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+      >
+        <i class="fas fa-plus"></i>
+        <span>Add Etablissement</span>
+      </button>
+      <button
+        (click)="openImportModal()"
+        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+      >
+        <i class="fas fa-file-import"></i>
+        <span>Import CSV</span>
+      </button>
+    </div>
   </div>
 
   <!-- Search and Import -->
@@ -36,30 +45,29 @@
         />
       </div>
 
-      <!-- Import -->
-      <div class="flex items-center space-x-4">
+      <!-- Filtres avancés -->
+      <div class="flex flex-1 gap-4">
         <input
-          type="file"
-          (change)="onFileSelected($event)"
-          accept=".csv"
-          class="hidden"
-          #fileInput
+          type="text"
+          [(ngModel)]="filterCode"
+          (ngModelChange)="filterEtablissements()"
+          placeholder="Filter by code..."
+          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
-        <button
-          (click)="fileInput.click()"
-          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <i class="fas fa-upload"></i>
-          <span>Select CSV</span>
-        </button>
-        <button
-          (click)="importEtablissements()"
-          [disabled]="!selectedFile"
-          class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <i class="fas fa-file-import"></i>
-          <span>Import</span>
-        </button>
+        <input
+          type="text"
+          [(ngModel)]="filterLibelle"
+          (ngModelChange)="filterEtablissements()"
+          placeholder="Filter by libelle..."
+          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+        <input
+          type="text"
+          [(ngModel)]="filterVille"
+          (ngModelChange)="filterEtablissements()"
+          placeholder="Filter by city..."
+          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
       </div>
     </div>
   </div>
@@ -303,5 +311,46 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Import CSV -->
+<div
+  *ngIf="isImportModalOpen"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+>
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+    <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+      Importer des Etablissements (CSV)
+    </h3>
+    <form (ngSubmit)="importEtablissements()" class="space-y-4">
+      <div>
+        <input
+          type="file"
+          (change)="onFileSelected($event)"
+          accept=".csv"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <div class="flex justify-end space-x-3 pt-4">
+        <button
+          type="button"
+          (click)="closeImportModal()"
+          class="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          [disabled]="!selectedFile"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+        >
+          Import
+        </button>
+      </div>
+    </form>
+    <div *ngIf="importMessage" class="alert alert-info my-2">
+      {{ importMessage }}
+    </div>
   </div>
 </div>
