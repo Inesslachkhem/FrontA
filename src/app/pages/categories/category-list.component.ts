@@ -228,9 +228,24 @@ import { CategorieService } from '../../services/categorie.service';
                 (change)="onFileSelected($event)"
                 class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
-              <p class="text-xs text-gray-500 mt-1">
-                CSV should contain: IdCategorie, Nom, Description
-              </p>
+              <div class="mt-2 text-xs text-gray-500">
+                <p>
+                  <strong>CSV should contain:</strong> IdCategorie, Nom,
+                  Description
+                </p>
+                <div
+                  class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700"
+                >
+                  <p>
+                    <strong>⚠️ WARNING:</strong> This will completely replace
+                    ALL data in the database!
+                  </p>
+                  <p>
+                    All existing categories, articles, stocks, promotions, and
+                    sales will be deleted.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div *ngIf="selectedFile" class="text-sm text-gray-600">
@@ -412,9 +427,21 @@ export class CategoryListComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
-
   importCategories() {
     if (!this.selectedFile) return;
+
+    // Show warning confirmation
+    const confirmed = confirm(
+      `⚠️ COMPLETE DATABASE REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing categories\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing promotions\n✗ Delete ALL existing sales\n\nAnd replace everything with data from: ${this.selectedFile.name}\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    console.log('Starting import for file:', this.selectedFile.name);
+    console.log('File size:', this.selectedFile.size, 'bytes');
+    console.log('File type:', this.selectedFile.type);
 
     this.importing = true;
     this.categorieService.importCategories(this.selectedFile).subscribe({
@@ -424,12 +451,48 @@ export class CategoryListComponent implements OnInit {
         this.selectedFile = null;
         this.importing = false;
         this.loadCategories();
-        this.showMessage('Categories imported successfully', 'success');
+        this.showMessage(
+          response.Message || 'Categories imported successfully',
+          'success'
+        );
       },
       error: (error) => {
-        console.error('Import error:', error);
+        console.error('Import error details:', error);
         this.importing = false;
-        this.showMessage('Error importing categories', 'error');
+
+        let errorMessage = 'Error importing categories';
+        let detailedErrors: string[] = [];
+
+        if (error.error) {
+          if (error.error.error) {
+            errorMessage = error.error.error;
+          } else if (error.error.Error) {
+            errorMessage = error.error.Error;
+          } else if (error.error.details) {
+            detailedErrors = error.error.details;
+            errorMessage = `CSV Validation Errors (${
+              detailedErrors.length
+            } issues found):\n${detailedErrors.join('\n')}`;
+          } else if (typeof error.error === 'string') {
+            errorMessage = error.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        console.error('Processed error message:', errorMessage);
+        console.error('Detailed errors:', detailedErrors);
+
+        // Show detailed errors in alert for debugging
+        if (detailedErrors.length > 0) {
+          alert(
+            `CSV Import Errors:\n\n${detailedErrors.join(
+              '\n'
+            )}\n\nPlease fix these issues and try again.`
+          );
+        }
+
+        this.showMessage(errorMessage, 'error');
       },
     });
   }

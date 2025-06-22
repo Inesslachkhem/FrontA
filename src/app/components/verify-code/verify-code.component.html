@@ -1,0 +1,33 @@
+<div class="verify-code-container">
+  <div class="verify-code-box">
+    <h2>Enter Verification Code</h2>
+    <p>Please enter the verification code sent to your email: {{email}}</p>
+
+    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <input 
+          type="text" 
+          formControlName="code"
+          placeholder="Enter 6-digit code"
+          [maxLength]="6"
+          class="form-control">
+        
+        <div *ngIf="verifyForm.get('code')?.errors && verifyForm.get('code')?.touched" class="error-message">
+          <div *ngIf="verifyForm.get('code')?.errors?.['required']">Verification code is required</div>
+          <div *ngIf="verifyForm.get('code')?.errors?.['minlength'] || verifyForm.get('code')?.errors?.['maxlength']">
+            Code must be 6 digits
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger">
+        {{error}}
+      </div>
+
+      <button type="submit" [disabled]="loading || verifyForm.invalid" class="btn btn-primary">
+        <span *ngIf="loading" class="spinner"></span>
+        Verify Code
+      </button>
+    </form>
+  </div>
+</div>

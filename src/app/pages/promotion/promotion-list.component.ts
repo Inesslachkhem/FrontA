@@ -108,9 +108,8 @@ import { ArticleService } from '../../services/article.service';
               class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4"
             >
               <div class="flex justify-between items-start">
-                <div>
-                  <h3 class="font-bold text-lg">
-                    {{ promotion.tauxReduction }}% OFF
+                <div>                  <h3 class="font-bold text-lg">
+                    {{ formatPercentage(promotion.tauxReduction) | number:'1.0-0' }}% OFF
                   </h3>
                   <p class="text-sm opacity-90">
                     {{ promotion.article?.libelle || 'Loading...' }}
@@ -134,17 +133,10 @@ import { ArticleService } from '../../services/article.service';
               <div class="flex justify-between">
                 <span class="text-gray-600">Article Code:</span>
                 <span class="font-medium">{{ promotion.codeArticle }}</span>
-              </div>
-              <div class="flex justify-between">
+              </div>              <div class="flex justify-between">
                 <span class="text-gray-600">End Date:</span>
                 <span class="font-medium">{{
                   promotion.dateFin | date : 'shortDate'
-                }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Created:</span>
-                <span class="font-medium">{{
-                  promotion.dateCreation | date : 'shortDate'
                 }}</span>
               </div>
               <div *ngIf="promotion.approvedBy" class="flex justify-between">
@@ -299,16 +291,20 @@ import { ArticleService } from '../../services/article.service';
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700"
-                >End Date *</label
-              >
+              <label class="block text-sm font-medium text-gray-700">End Date *</label>
               <input
                 [(ngModel)]="currentPromotion.dateFin"
                 name="dateFin"
                 type="datetime-local"
                 required
+                [min]="getMinDate()"
+                [class.border-red-500]="showDateValidationError"
                 class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                (change)="validateDate($event)"
               />
+              <p *ngIf="showDateValidationError" class="mt-1 text-sm text-red-600">
+                End date must be after {{ getMinDate() | date:'mediumDate' }}
+              </p>
             </div>
 
             <div class="flex justify-end space-x-2 pt-4">
@@ -335,6 +331,53 @@ import { ArticleService } from '../../services/article.service';
               </button>
             </div>
           </form>
+
+          <!-- AI Results -->
+          <div *ngIf="aiPredictionResults" class="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 class="text-lg font-semibold text-blue-900 mb-4">
+              <i class="fas fa-robot mr-2"></i>AI Prediction Results
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Prix et Réduction -->
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Prix Original:</span>
+                  <span class="font-medium">{{ aiPredictionResults.current_price_tnd | currency:'TND' }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Prix Promotionnel:</span>
+                  <span class="font-medium">{{ aiPredictionResults.promoted_price_tnd | currency:'TND' }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Réduction Recommandée:</span>
+                  <span class="font-medium">{{ aiPredictionResults.adjusted_promotion_pct }}%</span>
+                </div>
+              </div>
+
+              <!-- Impact Commercial -->
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Impact sur le Volume:</span>
+                  <span class="font-medium" [class.text-green-600]="aiPredictionResults.volume_impact_pct > 0">
+                    {{ aiPredictionResults.volume_impact_pct | number:'+1.1-1' }}%
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Impact sur le CA:</span>
+                  <span class="font-medium" [class.text-green-600]="aiPredictionResults.revenue_impact_tnd > 0">
+                    {{ aiPredictionResults.revenue_impact_tnd | currency:'TND' }}
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-blue-700">Volume Mensuel Projeté:</span>
+                  <span class="font-medium">{{ aiPredictionResults.projected_monthly_volume }} unités</span>
+                </div>
+              </div>
+            </div>
+
+            
+          </div>
         </div>
       </div>
     </div>
@@ -365,6 +408,12 @@ export class PromotionListComponent implements OnInit {
   // Current promotion for add
   currentPromotion: Partial<Promotion> = {};
   aiGenerating = false;
+
+  // Date validation
+  showDateValidationError = false;
+
+  // AI Prediction Results
+  aiPredictionResults: any = null;
 
   constructor(
     private promotionService: PromotionService,
@@ -518,22 +567,46 @@ export class PromotionListComponent implements OnInit {
     }
   }
 
+  getMinDate(): string {
+    // Return tomorrow's date as minimum value for dateFin
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+
+  validateDate(event: any) {
+    const selectedDate = new Date(event.target.value);
+    const minDate = new Date(this.getMinDate());
+    
+    this.showDateValidationError = selectedDate <= minDate;
+    
+    // If using AI generation, clear the invalid date
+    if (this.useAIGeneration && this.showDateValidationError) {
+      this.currentPromotion.dateFin = undefined;
+    }
+  }
+
   generateAIPromotion() {
     if (!this.currentPromotion.codeArticle || !this.currentPromotion.dateFin) {
-      alert('Please select an article and end date for AI generation.');
+      alert('Please select both an article and a future end date for AI generation.');
+      return;
+    }
+
+    if (this.showDateValidationError) {
+      alert('Please select a valid future date for the promotion.');
       return;
     }
 
     this.aiGenerating = true;
 
     // Convert datetime-local to YYYY-MM-DD format
-    const targetDate = this.currentPromotion.dateFin
-      ? new Date(this.currentPromotion.dateFin).toISOString().split('T')[0]
-      : '';
+    const targetDate = new Date(this.currentPromotion.dateFin)
+      .toISOString()
+      .split('T')[0];
 
     this.promotionService
       .generateAIPromotion(
-        this.currentPromotion.codeArticle!,
+        this.currentPromotion.codeArticle,
         targetDate,
         true // auto_save = true
       )
@@ -542,26 +615,20 @@ export class PromotionListComponent implements OnInit {
           this.aiGenerating = false;
           if (response.status === 'success') {
             const prediction = response.data.prediction;
-
-            // Show AI results to user
-            alert(`AI Promotion Generated Successfully!
-          
-Article: ${response.data.article_info.libelle}
-Recommended Discount: ${prediction.adjusted_promotion_pct}%
-New Price: ${prediction.promoted_price_tnd} TND
-Expected Volume Increase: ${prediction.volume_impact_pct}%
-Expected Revenue Impact: ${prediction.revenue_impact_tnd} TND
-
-Status: ${response.data.message}`);
-
-            this.loadPromotions();
-            this.closeModal();
+            console.log('AI Prediction Results:', prediction);
+            this.aiPredictionResults = prediction;
+            
+            // Mettre à jour automatiquement les champs du formulaire
+            this.currentPromotion.tauxReduction = prediction.adjusted_promotion_pct;
+            this.currentPromotion.prix_Vente_TND_Avant = prediction.current_price_tnd;
+            this.currentPromotion.prix_Vente_TND_Apres = prediction.promoted_price_tnd;
           } else {
             alert('Error generating AI promotion: ' + response.message);
           }
         },
         error: (error) => {
           this.aiGenerating = false;
+          this.aiPredictionResults = null;
           console.error('Error generating AI promotion:', error);
           alert('Error generating AI promotion. Please try again.');
         },
@@ -613,6 +680,27 @@ Status: ${response.data.message}`);
     }
   }
 
+  convertPercentageToDecimal(value: number): number {
+    return value / 100;
+  }
+
+  createPromotion() {
+    if (this.currentPromotion.tauxReduction) {
+      // Convertir le pourcentage en décimal avant l'envoi
+      this.currentPromotion.tauxReduction = this.convertPercentageToDecimal(this.currentPromotion.tauxReduction);
+    }
+    
+    this.promotionService.create(this.currentPromotion as Promotion).subscribe({
+      next: () => {
+        this.loadPromotions();
+        this.closeModal();
+      },
+      error: (error) => {
+        console.error('Error creating promotion:', error);
+      }
+    });
+  }
+
   getStatusClass(promotion: Promotion): string {
     if (promotion.isAccepted) {
       return 'bg-green-100 text-green-800';
@@ -638,5 +726,9 @@ Status: ${response.data.message}`);
       default:
         return 'Get started by creating your first promotion.';
     }
+  }
+
+  formatPercentage(value: number): number {
+    return value * 100;
   }
 }

@@ -25,10 +25,9 @@
       <i class="fas fa-bars text-gray-600 dark:text-gray-300"></i>
     </button>
   </div>
-
   <!-- Navigation Menu -->
   <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-    <ng-container *ngFor="let item of menuItems">
+    <ng-container *ngFor="let item of filteredMenuItems">
       <!-- Menu Item without children -->
       <div *ngIf="!item.children">
         <a
@@ -88,31 +87,58 @@
       </div>
     </ng-container>
   </nav>
-
   <!-- Sidebar Footer -->
   <div class="p-4 border-t border-gray-200 dark:border-gray-700">
     <div class="flex items-center space-x-3" *ngIf="!isCollapsed">
       <div
-        class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center"
+        class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center"
       >
-        <i class="fas fa-user text-gray-600 dark:text-gray-300 text-sm"></i>
+        <i
+          class="fas fa-user-shield text-white text-sm"
+          *ngIf="currentUser?.type === userTypeEnum.Admin; else normalUser"
+        ></i>
+        <ng-template #normalUser>
+          <i class="fas fa-user text-white text-sm"></i>
+        </ng-template>
       </div>
       <div class="flex-1 min-w-0">
         <p
           class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate"
         >
-          Admin
+          {{ currentUser?.prenom || "Admin" }} {{ currentUser?.nom || "" }}
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-          admin&#64;smartpromo.com
+          {{ currentUser?.email || "admin@smartpromo.com" }}
         </p>
+        <div
+          class="flex items-center mt-1"
+          *ngIf="currentUser?.type === userTypeEnum.Admin"
+        >
+          <span
+            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300"
+          >
+            <i
+              class="fas fa-crown text-primary-600 dark:text-primary-400 mr-1"
+            ></i>
+            Administrateur
+          </span>
+        </div>
       </div>
     </div>
     <div class="flex justify-center" *ngIf="isCollapsed">
       <div
-        class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center"
+        class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center"
       >
-        <i class="fas fa-user text-gray-600 dark:text-gray-300 text-sm"></i>
+        <i
+          class="fas fa-user-shield text-white text-sm"
+          *ngIf="
+            currentUser?.type === userTypeEnum.Admin;
+            else normalUserCollapsed
+          "
+        ></i>
+        <ng-template #normalUserCollapsed>
+          <i class="fas fa-user text-white text-sm"></i>
+        </ng-template>
       </div>
     </div>
   </div>

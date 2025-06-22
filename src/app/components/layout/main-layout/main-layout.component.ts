@@ -9,6 +9,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { LayoutService } from '../../../services/layout.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -26,13 +27,21 @@ import { NavbarComponent } from '../navbar/navbar.component';
 export class MainLayoutComponent implements OnInit {
   isMobile = false;
   sidebarOpen = false;
+  sidebarCollapsed = false;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
-
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private layoutService: LayoutService
+  ) {}
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
     }
+
+    // Subscribe to sidebar collapse state
+    this.layoutService.sidebarCollapsed$.subscribe((collapsed) => {
+      this.sidebarCollapsed = collapsed;
+    });
   }
 
   @HostListener('window:resize', ['$event'])

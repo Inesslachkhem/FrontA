@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Stock } from '../models/article.model';
+import { Stock, Article } from '../models/article.model';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +10,12 @@ export class StockService {
   private apiUrl = 'http://localhost:5256/api/Stock'; // Adjust URL as needed
 
   constructor(private http: HttpClient) {}
+
+  // Calculate stock value
+  calculateStockValue(stock: Stock, article?: Article | null): number {
+    if (!article || !stock.quantitePhysique) return 0;
+    return stock.quantitePhysique * article.prix_Achat_TND;
+  }
 
   // Get all stocks
   getAll(): Observable<Stock[]> {

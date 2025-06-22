@@ -64,6 +64,11 @@
     </div>
   </div>
 
+  <!-- Message d'importation -->
+  <div *ngIf="importMessage" class="alert alert-info my-2">
+    {{ importMessage }}
+  </div>
+
   <!-- Etablissements Table -->
   <div
     class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"

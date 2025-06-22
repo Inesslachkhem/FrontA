@@ -16,7 +16,7 @@ export interface Article {
   familleNiv6: string;
   familleNiv7: string;
   familleNiv8: string;
-  quantite_Achat: string;
+  quantite_Achat: number;
   dateLibre: Date;
   prix_Vente_TND: number;
   prix_Achat_TND: number;
@@ -34,6 +34,15 @@ export interface Categorie {
   articles?: Article[];
 }
 
+export interface AIPrediction {
+  current_price_tnd: number;
+  promoted_price_tnd: number;
+  adjusted_promotion_pct: number;
+  volume_impact_pct: number;
+  revenue_impact_tnd: number;
+  projected_monthly_volume: number;
+}
+
 export interface Promotion {
   id: number;
   dateFin: Date;
@@ -46,6 +55,7 @@ export interface Promotion {
   dateCreation: Date;
   dateApproval?: Date;
   approvedBy?: string;
+  aiPredictions?: AIPrediction;
 }
 
 export interface Stock {
@@ -59,22 +69,19 @@ export interface Stock {
   valeur_Stock_TND: number;
   articleId: number;
   article?: Article;
+  depotId: number;
+  depot?: Depot;
 }
 
-export interface Vente {
-  id: number;
-  quantiteVendue: number;
-  montantTotal: number;
-  dateVente: Date;
-  articleId: number;
-  article?: Article;
-}
+import { Vente } from './vente.model';
 
 export interface Depot {
   id: number;
   code: string;
   libelle: string;
   typeDepot: string;
+  etablissementId: number;
+  etablissement?: Etablissement;
 }
 
 export interface Etablissement {
@@ -85,4 +92,5 @@ export interface Etablissement {
   ville: string;
   type: string;
   secteur: string;
+  depots?: Depot[];
 }

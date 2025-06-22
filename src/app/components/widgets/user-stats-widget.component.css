@@ -1,0 +1,52 @@
+/* User Stats Widget Styles */
+
+.stats-widget {
+  transition: all 0.3s ease;
+}
+
+.stats-widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  transition: width 0.8s ease-in-out;
+}
+
+.type-indicator {
+  transition: transform 0.2s ease;
+}
+
+.type-indicator:hover {
+  transform: scale(1.2);
+}
+
+.stat-number {
+  counter-reset: stat-counter;
+  animation: countUp 1s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

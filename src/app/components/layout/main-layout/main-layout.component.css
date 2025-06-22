@@ -1,0 +1,84 @@
+/* Main Layout Styles */
+.layout-container {
+  position: relative;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar positioning */
+.sidebar-container {
+  position: relative;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+/* Main content area */
+.main-content {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header positioning */
+.header-container {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  background: inherit;
+}
+
+/* Content area */
+.content-area {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Mobile sidebar overlay */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background-color: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Prevent horizontal scroll on main container */
+.layout-root {
+  overflow-x: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+  }
+
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .sidebar-container {
+    position: static;
+  }
+}
+
+/* Smooth transitions */
+* {
+  transition-property: margin, width, transform;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

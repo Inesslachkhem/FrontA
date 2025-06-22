@@ -24,6 +24,7 @@ export class EtablissementComponent implements OnInit {
 
   // File upload
   selectedFile: File | null = null;
+  importMessage: string | null = null;
 
   constructor(private etablissementService: EtablissementService) {}
 
@@ -122,12 +123,13 @@ export class EtablissementComponent implements OnInit {
         .importEtablissements(this.selectedFile)
         .subscribe({
           next: (response) => {
-            console.log('Import successful:', response);
+            this.importMessage = response?.message || 'Importation réussie !';
             this.loadEtablissements();
             this.selectedFile = null;
           },
-          error: (error) =>
-            console.error('Error importing etablissements:', error),
+          error: (error) => {
+            this.importMessage = error?.error?.error || 'Erreur lors de l\'importation.';
+          },
         });
     }
   }

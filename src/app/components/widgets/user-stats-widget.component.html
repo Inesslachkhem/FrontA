@@ -1,0 +1,201 @@
+<div
+  *ngIf="isAdmin"
+  class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+>
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Statistiques Utilisateurs
+    </h3>
+    <div class="flex items-center space-x-2">
+      <button
+        (click)="loadUserStats()"
+        class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          ></path>
+        </svg>
+      </button>
+      <a
+        routerLink="/users"
+        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+      >
+        Voir tout →
+      </a>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex items-center justify-center py-8">
+    <div class="inline-flex items-center">
+      <svg
+        class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      Chargement...
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="text-center py-8">
+    <div class="text-red-500 dark:text-red-400">
+      <svg
+        class="w-12 h-12 mx-auto mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path>
+      </svg>
+      <p class="text-sm">{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Stats Content -->
+  <div *ngIf="userStats && !isLoading" class="space-y-4">
+    <!-- Main Stats -->
+    <div class="grid grid-cols-2 gap-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ userStats.totalUsers }}
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          Total Utilisateurs
+        </div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+          {{ userStats.activeUsers }}
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          Utilisateurs Actifs
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-4">
+      <div
+        class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2"
+      >
+        <span>Taux d'activité</span>
+        <span>{{ activeUsersPercentage }}%</span>
+      </div>
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div
+          class="bg-green-600 h-2 rounded-full transition-all duration-300"
+          [style.width.%]="activeUsersPercentage"
+        ></div>
+      </div>
+    </div>
+
+    <!-- User Types Breakdown -->
+    <div class="space-y-3">
+      <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+        Répartition par type
+      </h4>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400"
+              >Administrateurs</span
+            >
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            {{
+              userStats.totalUsers -
+                userStats.directeurCommercialCount -
+                userStats.responsablesStocksCount
+            }}
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400"
+              >Directeurs Commerciaux</span
+            >
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            {{ userStats.directeurCommercialCount }}
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400"
+              >Responsables Stocks</span
+            >
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            {{ userStats.responsablesStocksCount }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inactive Users Alert -->
+    <div
+      *ngIf="userStats.inactiveUsers > 0"
+      class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+    >
+      <div class="flex items-center space-x-2">
+        <svg
+          class="w-4 h-4 text-yellow-600 dark:text-yellow-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.349 16.5c-.77.833.192 2.5 1.732 2.5z"
+          ></path>
+        </svg>
+        <span class="text-sm text-yellow-800 dark:text-yellow-300">
+          {{ userStats.inactiveUsers }} utilisateur{{
+            userStats.inactiveUsers > 1 ? "s" : ""
+          }}
+          inactif{{ userStats.inactiveUsers > 1 ? "s" : "" }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

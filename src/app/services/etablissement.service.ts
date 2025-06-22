@@ -34,6 +34,7 @@ export class EtablissementService {
   importEtablissements(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
+    // On attend un objet JSON du backend
     return this.http.post(`${this.apiUrl}/import-Etab`, formData);
   }
 }

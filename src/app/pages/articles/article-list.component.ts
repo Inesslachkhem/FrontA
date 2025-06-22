@@ -347,6 +347,31 @@ import { CategorieService } from '../../services/categorie.service';
                 (change)="onFileSelected($event)"
                 class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              <div class="mt-2 text-xs text-gray-500">
+                <p><strong>CSV Format Required (20 columns):</strong></p>
+                <p>
+                  Id, CodeArticle, CodeBarre, Libelle, CodeDim1, LibelleDim1,
+                  CodeDim2, LibelleDim2, Fournisseur, FamilleNiv1, FamilleNiv2,
+                  FamilleNiv3, FamilleNiv4, FamilleNiv5, FamilleNiv6,
+                  FamilleNiv7, FamilleNiv8, Quantite_Achat, DateLibre,
+                  IdCategorie
+                </p>
+                <p class="mt-1 text-red-600">
+                  <strong>Important:</strong> Categories must be imported first!
+                </p>
+                <div
+                  class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700"
+                >
+                  <p>
+                    <strong>⚠️ WARNING:</strong> This will replace ALL
+                    article-related data!
+                  </p>
+                  <p>
+                    All existing articles, stocks, promotions, and sales will be
+                    deleted.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div *ngIf="selectedFile" class="text-sm text-gray-600">
@@ -355,8 +380,20 @@ import { CategorieService } from '../../services/categorie.service';
               }}
               KB)
             </div>
-
             <div class="flex justify-end space-x-2">
+              <button
+                (click)="checkCategories()"
+                class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Check Categories
+              </button>
+              <button
+                (click)="testCsvFormat()"
+                [disabled]="!selectedFile"
+                class="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
+              >
+                Test CSV
+              </button>
               <button
                 (click)="showImportModal = false"
                 class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
@@ -535,9 +572,21 @@ export class ArticleListComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
-
   importArticles() {
     if (!this.selectedFile) return;
+
+    // Show warning confirmation
+    const confirmed = confirm(
+      `⚠️ ARTICLE DATA REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing promotions\n✗ Delete ALL existing sales\n\nAnd replace with article data from: ${this.selectedFile.name}\n\nCategories will remain unchanged.\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    console.log('Starting article import for file:', this.selectedFile.name);
+    console.log('File size:', this.selectedFile.size, 'bytes');
+    console.log('File type:', this.selectedFile.type);
 
     this.importing = true;
     this.articleService.importArticles(this.selectedFile).subscribe({
@@ -547,10 +596,138 @@ export class ArticleListComponent implements OnInit {
         this.selectedFile = null;
         this.importing = false;
         this.loadArticles();
+
+        // Show success message
+        alert(`✅ ${response.Message || 'Articles imported successfully!'}`);
       },
       error: (error) => {
-        console.error('Import error:', error);
+        console.error('Import error details:', error);
         this.importing = false;
+
+        let errorMessage = 'Error importing articles';
+        let detailedErrors: string[] = [];
+
+        if (error.error) {
+          if (error.error.Error) {
+            errorMessage = error.error.Error;
+          } else if (error.error.Details) {
+            detailedErrors = error.error.Details;
+            errorMessage = `❌ CSV Validation Errors (${
+              detailedErrors?.length || 0
+            } issues found):\n${
+              detailedErrors?.join('\n') || 'Unknown errors'
+            }`;
+          } else if (error.error.MissingCategories) {
+            const missingCats = error.error.MissingCategories;
+            errorMessage = `❌ Missing Categories Error:\n\nThe following categories don't exist in the database:\n${
+              missingCats?.join(', ') || 'Unknown categories'
+            }\n\n${
+              error.error.Message ||
+              'Please import categories first before importing articles.'
+            }`;
+
+            // Offer to auto-create the missing categories
+            this.handleMissingCategories(missingCats);
+          } else if (typeof error.error === 'string') {
+            errorMessage = error.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        console.error('Processed error message:', errorMessage);
+        console.error('Detailed errors:', detailedErrors);
+
+        // Show detailed error in alert
+        alert(errorMessage);
+      },
+    });
+  }
+
+  checkCategories() {
+    this.articleService.getCategoriesCount().subscribe({
+      next: (response) => {
+        console.log('Categories check:', response);
+        alert(
+          `📊 Categories Check:\n\nTotal Categories: ${
+            response.TotalCategories || 0
+          }\n\nSample Categories:\n${
+            response.SampleCategories?.map(
+              (c: any) => `- ${c.IdCategorie}: ${c.Nom}`
+            )?.join('\n') || 'No sample categories available'
+          }\n\n${response.Message || ''}`
+        );
+      },
+      error: (error) => {
+        console.error('Error checking categories:', error);
+        alert(
+          '❌ Error checking categories. Make sure the backend is running.'
+        );
+      },
+    });
+  }
+
+  testCsvFormat() {
+    if (!this.selectedFile) return;
+
+    this.articleService.testCsvParsing(this.selectedFile).subscribe({
+      next: (response) => {
+        console.log('CSV test result:', response);
+        const info = `📄 CSV Format Test Results:\n\nFile: ${
+          response.FileName || 'Unknown'
+        }\nSize: ${response.FileSize || 'Unknown'} bytes\n\nFirst few lines:\n${
+          response.FirstLines?.join('\n') || 'No lines available'
+        }\n\nHeader Analysis:\n${
+          response.HeaderAnalysis || 'No header analysis available'
+        }\n\nSample Parsed Data:\n${JSON.stringify(
+          response.SampleData || {},
+          null,
+          2
+        )}`;
+        alert(info);
+      },
+      error: (error) => {
+        console.error('CSV test error:', error);
+        alert(
+          `❌ CSV Test Error:\n\n${
+            error.error?.Error || error.message || 'Unknown error'
+          }`
+        );
+      },
+    });
+  }
+
+  handleMissingCategories(missingCategories: string[]): void {
+    if (!missingCategories || missingCategories.length === 0) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `⚠️ Missing Categories Detected!\n\n${
+        missingCategories.length
+      } categories are missing:\n${missingCategories.slice(0, 10).join(', ')}${
+        missingCategories.length > 10 ? '...' : ''
+      }\n\nWould you like to auto-create these categories?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.categorieService.bulkCreate(missingCategories).subscribe({
+      next: (response) => {
+        console.log('Categories auto-created:', response);
+        alert(
+          `✅ Categories Auto-Created!\n\n${response.Message}\n\nYou can now try importing your articles again.`
+        );
+      },
+      error: (error) => {
+        console.error('Error auto-creating categories:', error);
+        alert(
+          `❌ Error Auto-Creating Categories:\n\n${
+            error.error?.Message || error.message || 'Unknown error'
+          }`
+        );
       },
     });
   }

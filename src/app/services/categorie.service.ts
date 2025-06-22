@@ -47,4 +47,16 @@ export class CategorieService {
   clearAll(): Observable<any> {
     return this.http.delete(`${this.apiUrl}/clear-all`);
   }
+
+  // Debug CSV import
+  debugCsv(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/debug-csv`, formData);
+  }
+
+  // Create categories in bulk from a list of IDs
+  bulkCreate(categoryIds: string[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/bulk-create`, categoryIds);
+  }
 }

@@ -13,11 +13,19 @@ import { StockComponent } from './pages/stock/stock.component';
 import { StockListComponent } from './pages/stock/stock-list.component';
 import { DepartmentComponent } from './pages/department/department.component';
 import { EtablissementComponent } from './pages/etablissement/etablissement.component';
+import { LoginComponent } from './pages/auth/login.component';
+import { UserManagementComponent } from './pages/users/user-management.component';
+import { UserProfileComponent } from './pages/users/user-profile.component';
+import { AuthGuard } from './guards/auth.guard';
+import { VerifyCodeComponent } from './components/verify-code/verify-code.component';
 
 export const routes: Routes = [
+  { path: 'login', component: LoginComponent },
+  { path: 'verify', component: VerifyCodeComponent },
   {
     path: '',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
@@ -28,7 +36,12 @@ export const routes: Routes = [
       { path: 'stock', component: StockListComponent },
       { path: 'department', component: DepartmentComponent },
       { path: 'etablissement', component: EtablissementComponent },
+      { path: 'users', component: UserManagementComponent },
+      { path: 'profile', component: UserProfileComponent },
+      { path: 'admin/profile', component: UserProfileComponent },
+      { path: 'admin/stats', component: DashboardComponent }, // Reuse dashboard for now
+      { path: 'admin/settings', component: UserManagementComponent }, // Reuse user management for now
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: 'login' },
 ];

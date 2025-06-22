@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../../services/auth.service';
+import { LayoutService } from '../../../services/layout.service';
+import { User, UserType } from '../../../models/user.model';
 
 interface MenuItem {
   label: string;
@@ -8,6 +11,7 @@ interface MenuItem {
   route?: string;
   children?: MenuItem[];
   expanded?: boolean;
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -19,6 +23,8 @@ interface MenuItem {
 })
 export class SidebarComponent implements OnInit {
   isCollapsed = false;
+  currentUser: User | null = null;
+  userTypeEnum = UserType; // Make UserType enum available in template
 
   menuItems: MenuItem[] = [
     {
@@ -49,10 +55,9 @@ export class SidebarComponent implements OnInit {
       label: 'Stock',
       icon: 'fas fa-boxes',
       route: '/stock',
-    },
-    {
-      label: 'Department',
-      icon: 'fas fa-building',
+    },    {
+      label: 'Depots',
+      icon: 'fas fa-warehouse',
       route: '/department',
     },
     {
@@ -60,17 +65,62 @@ export class SidebarComponent implements OnInit {
       icon: 'fas fa-university',
       route: '/etablissement',
     },
+    {
+      label: 'Administration',
+      icon: 'fas fa-cog',
+      children: [
+        { label: 'Utilisateurs', icon: 'fas fa-users', route: '/users' },
+        {
+          label: 'Profil Admin',
+          icon: 'fas fa-user-shield',
+          route: '/admin/profile',
+        },
+        {
+          label: 'Statistiques',
+          icon: 'fas fa-chart-bar',
+          route: '/admin/stats',
+        },
+        {
+          label: 'Paramètres',
+          icon: 'fas fa-sliders-h',
+          route: '/admin/settings',
+        },
+      ],
+    },
   ];
 
-  ngOnInit(): void {}
+  constructor(
+    private authService: AuthService,
+    private layoutService: LayoutService
+  ) {}
+  ngOnInit(): void {
+    this.authService.currentUser$.subscribe((user) => {
+      this.currentUser = user;
+    });
 
+    // Subscribe to layout service for sidebar collapse state
+    this.layoutService.sidebarCollapsed$.subscribe((collapsed) => {
+      this.isCollapsed = collapsed;
+    });
+  }
   toggleSidebar(): void {
-    this.isCollapsed = !this.isCollapsed;
+    this.layoutService.toggleSidebar();
   }
 
   toggleSubmenu(item: MenuItem): void {
     if (item.children) {
       item.expanded = !item.expanded;
     }
+  }
+
+  isMenuItemVisible(item: MenuItem): boolean {
+    if (item.adminOnly) {
+      return this.currentUser?.type === UserType.Admin;
+    }
+    return true;
+  }
+
+  get filteredMenuItems(): MenuItem[] {
+    return this.menuItems.filter((item) => this.isMenuItemVisible(item));
   }
 }

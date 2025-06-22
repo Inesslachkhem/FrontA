@@ -531,11 +531,17 @@ export class StockListComponent implements OnInit {
     this.loadStocks();
     this.loadArticles();
   }
-
   loadStocks() {
     this.stockService.getAll().subscribe({
       next: (stocks) => {
-        this.stocks = stocks;
+        // Mettre à jour la valeur du stock pour chaque élément
+        this.stocks = stocks.map(stock => {
+          const article = this.articles.find(a => a.id === stock.articleId);
+          if (article) {
+            stock.valeur_Stock_TND = this.stockService.calculateStockValue(stock, article);
+          }
+          return stock;
+        });
         this.calculateCounts();
         this.filterStocks();
       },
@@ -627,8 +633,15 @@ export class StockListComponent implements OnInit {
       });
     }
   }
-
   saveStock() {
+    // Calculer la valeur du stock avant de sauvegarder
+    if (this.currentStock.articleId) {
+      const article = this.articles.find(a => a.id === this.currentStock.articleId);
+      if (article) {
+        this.currentStock.valeur_Stock_TND = this.stockService.calculateStockValue(this.currentStock as Stock, article);
+      }
+    }
+
     if (this.showEditModal && this.currentStock.id) {
       this.stockService
         .update(this.currentStock.id, this.currentStock as Stock)

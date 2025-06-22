@@ -24,6 +24,7 @@ export class DepartmentComponent implements OnInit {
 
   // File upload
   selectedFile: File | null = null;
+  importMessage: string | null = null;
 
   constructor(private depotService: DepotService) {}
 
@@ -113,11 +114,13 @@ export class DepartmentComponent implements OnInit {
     if (this.selectedFile) {
       this.depotService.importDepots(this.selectedFile).subscribe({
         next: (response) => {
-          console.log('Import successful:', response);
+          this.importMessage = response?.message || 'Importation réussie !';
           this.loadDepots();
           this.selectedFile = null;
         },
-        error: (error) => console.error('Error importing depots:', error),
+        error: (error) => {
+          this.importMessage = error?.error?.error || 'Erreur lors de l\'importation.';
+        },
       });
     }
   }

@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Vente, Article } from '../../models/article.model';
+import { Article } from '../../models/article.model';
+import { Vente } from '../../models/vente.model';
 import { VenteService } from '../../services/vente.service';
 import { ArticleService } from '../../services/article.service';
 
@@ -130,10 +131,39 @@ import { ArticleService } from '../../services/article.service';
           </button>
         </div>
       </div>
-
       <!-- Sales Table -->
       <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="flex items-center justify-center py-8">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+          ></div>
+          <span class="ml-2 text-gray-600">Loading sales data...</span>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          *ngIf="!isLoading && paginatedVentes.length === 0"
+          class="text-center py-8"
+        >
+          <div class="text-gray-500">
+            <i class="fas fa-shopping-cart text-4xl mb-4"></i>
+            <p class="text-lg font-medium">No sales found</p>
+            <p class="text-sm">
+              {{
+                ventes.length === 0
+                  ? 'No sales data available.'
+                  : 'Try adjusting your filters.'
+              }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div
+          *ngIf="!isLoading && paginatedVentes.length > 0"
+          class="overflow-x-auto"
+        >
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
@@ -186,7 +216,7 @@ import { ArticleService } from '../../services/article.service';
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900">
-                    {{ vente.article?.libelle || 'Loading...' }}
+                    {{ vente.articleId   }}
                   </div>
                   <div class="text-sm text-gray-500">
                     {{ vente.article?.codeArticle }}
@@ -194,12 +224,15 @@ import { ArticleService } from '../../services/article.service';
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm text-gray-900">
-                    {{ vente.quantiteVendue }}
+                    {{ vente.quantiteFacturee }}
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900">
-                    {{ vente.montantTotal | currency : 'TND' }}
+                    {{
+                      vente.prix_Vente_TND * vente.quantiteFacturee
+                        | currency : 'TND'
+                    }}
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -209,7 +242,7 @@ import { ArticleService } from '../../services/article.service';
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm text-gray-900">
-                    {{ vente.dateVente | date : 'short' }}
+                    {{ vente.date | date : 'short' }}
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -320,7 +353,7 @@ import { ArticleService } from '../../services/article.service';
                   >Quantity Sold *</label
                 >
                 <input
-                  [(ngModel)]="currentVente.quantiteVendue"
+                  [(ngModel)]="currentVente.quantiteFacturee"
                   name="quantiteVendue"
                   type="number"
                   min="1"
@@ -349,7 +382,7 @@ import { ArticleService } from '../../services/article.service';
                 >Total Amount (TND) *</label
               >
               <input
-                [(ngModel)]="currentVente.montantTotal"
+                [(ngModel)]="unitPrice"
                 name="montantTotal"
                 type="number"
                 step="0.01"
@@ -364,7 +397,7 @@ import { ArticleService } from '../../services/article.service';
                 >Sale Date *</label
               >
               <input
-                [(ngModel)]="currentVente.dateVente"
+                [(ngModel)]="currentVente.date"
                 name="dateVente"
                 type="datetime-local"
                 required
@@ -460,6 +493,10 @@ export class VenteListComponent implements OnInit {
   paginatedVentes: Vente[] = [];
   articles: Article[] = [];
 
+  // Loading states
+  isLoading = true;
+  isLoadingArticles = true;
+
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -496,26 +533,39 @@ export class VenteListComponent implements OnInit {
     this.loadVentes();
     this.loadArticles();
   }
-
   loadVentes() {
+    console.log('Loading ventes...');
+    this.isLoading = true;
     this.venteService.getAll().subscribe({
       next: (ventes) => {
+        console.log('Ventes loaded:', ventes);
         this.ventes = ventes;
         this.filterVentes();
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading ventes:', error);
+        console.error('Error details:', {
+          status: error.status,
+          message: error.message,
+          url: error.url,
+        });
+        this.isLoading = false;
       },
     });
   }
 
   loadArticles() {
+    this.isLoadingArticles = true;
     this.articleService.getAll().subscribe({
       next: (articles) => {
+        console.log('Articles loaded:', articles);
         this.articles = articles;
+        this.isLoadingArticles = false;
       },
       error: (error) => {
         console.error('Error loading articles:', error);
+        this.isLoadingArticles = false;
       },
     });
   }
@@ -531,29 +581,27 @@ export class VenteListComponent implements OnInit {
           vente.article?.libelle?.toLowerCase().includes(term) ||
           vente.article?.codeArticle?.toLowerCase().includes(term)
       );
-    }
-
-    // Date range filter
+    } // Date range filter
     if (this.startDate) {
       const start = new Date(this.startDate);
-      filtered = filtered.filter((vente) => new Date(vente.dateVente) >= start);
+      filtered = filtered.filter((vente) => new Date(vente.date) >= start);
     }
     if (this.endDate) {
       const end = new Date(this.endDate);
       end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((vente) => new Date(vente.dateVente) <= end);
+      filtered = filtered.filter((vente) => new Date(vente.date) <= end);
     }
 
     // Amount filter
     if (this.minAmount !== null) {
       filtered = filtered.filter(
-        (vente) => vente.montantTotal >= this.minAmount!
+        (vente) =>
+          vente.prix_Vente_TND * vente.quantiteFacturee >= this.minAmount!
       );
     }
 
     this.filteredVentes = filtered.sort(
-      (a, b) =>
-        new Date(b.dateVente).getTime() - new Date(a.dateVente).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     this.updatePagination();
   }
@@ -595,8 +643,8 @@ export class VenteListComponent implements OnInit {
   }
 
   saveVente() {
-    if (!this.currentVente.dateVente) {
-      this.currentVente.dateVente = new Date();
+    if (!this.currentVente.date) {
+      this.currentVente.date = new Date();
     }
 
     if (this.showEditModal && this.currentVente.id) {
@@ -642,9 +690,9 @@ export class VenteListComponent implements OnInit {
   }
 
   calculateTotal() {
-    if (this.currentVente.quantiteVendue && this.unitPrice) {
-      this.currentVente.montantTotal =
-        this.currentVente.quantiteVendue * this.unitPrice;
+    if (this.currentVente.quantiteFacturee && this.unitPrice) {
+      // We don't need to set montantTotal as it's calculated from prix_Vente_TND * quantiteFacturee
+      this.currentVente.prix_Vente_TND = this.unitPrice;
     }
   }
 
@@ -673,17 +721,17 @@ export class VenteListComponent implements OnInit {
 
   // Utility methods
   getUnitPrice(vente: Vente): number {
-    return vente.quantiteVendue > 0
-      ? vente.montantTotal / vente.quantiteVendue
-      : 0;
+    return vente.quantiteFacturee > 0 ? vente.prix_Vente_TND : 0;
   }
 
   getTotalSales(): number {
     return this.ventes.length;
   }
-
   getTotalRevenue(): number {
-    return this.ventes.reduce((total, vente) => total + vente.montantTotal, 0);
+    return this.ventes.reduce(
+      (total, vente) => total + vente.prix_Vente_TND * vente.quantiteFacturee,
+      0
+    );
   }
 
   getAverageSaleValue(): number {
@@ -691,10 +739,9 @@ export class VenteListComponent implements OnInit {
       ? this.getTotalRevenue() / this.ventes.length
       : 0;
   }
-
   getTotalQuantitySold(): number {
     return this.ventes.reduce(
-      (total, vente) => total + vente.quantiteVendue,
+      (total, vente) => total + vente.quantiteFacturee,
       0
     );
   }

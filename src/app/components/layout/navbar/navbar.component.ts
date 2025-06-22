@@ -2,6 +2,9 @@ import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { AuthService } from '../../../services/auth.service';
+import { LayoutService } from '../../../services/layout.service';
+import { User, getUserTypeDisplayName } from '../../../models/user.model';
 
 @Component({
   selector: 'app-navbar',
@@ -15,6 +18,8 @@ export class NavbarComponent implements OnInit {
   isDarkMode = false;
   isNotificationOpen = false;
   isProfileOpen = false;
+  currentUser: User | null = null;
+  isSidebarCollapsed = false;
 
   notifications = [
     {
@@ -39,13 +44,23 @@ export class NavbarComponent implements OnInit {
       unread: false,
     },
   ];
-
   constructor(
     private router: Router,
+    private authService: AuthService,
+    private layoutService: LayoutService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
-
   ngOnInit(): void {
+    // Subscribe to current user
+    this.authService.currentUser$.subscribe((user) => {
+      this.currentUser = user;
+    });
+
+    // Subscribe to sidebar collapse state
+    this.layoutService.sidebarCollapsed$.subscribe((collapsed) => {
+      this.isSidebarCollapsed = collapsed;
+    });
+
     // Update page title based on current route
     this.router.events
       .pipe(
@@ -58,14 +73,18 @@ export class NavbarComponent implements OnInit {
           if (url.includes('ventes')) return 'Ventes';
           if (url.includes('promotion')) return 'Promotion';
           if (url.includes('stock')) return 'Stock';
-          if (url.includes('department')) return 'Department';
+          if (url.includes('department')) return 'Depots';
           if (url.includes('etablissement')) return 'Etablissement';
+          if (url.includes('users')) return 'Gestion des Utilisateurs';
+          if (url.includes('profile')) return 'Mon Profil';
           return 'Dashboard';
         })
       )
       .subscribe((title) => {
         this.pageTitle = title;
-      }); // Check for saved theme preference
+      });
+
+    // Check for saved theme preference
     if (
       isPlatformBrowser(this.platformId) &&
       typeof localStorage !== 'undefined'
@@ -75,6 +94,7 @@ export class NavbarComponent implements OnInit {
     }
     this.applyTheme();
   }
+
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     this.applyTheme();
@@ -117,5 +137,25 @@ export class NavbarComponent implements OnInit {
 
   get unreadCount(): number {
     return this.notifications.filter((n) => n.unread).length;
+  }
+
+  getUserTypeDisplay(): string {
+    return this.currentUser
+      ? getUserTypeDisplayName(this.currentUser.type)
+      : '';
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
+    this.isProfileOpen = false;
+  }
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+    this.isProfileOpen = false;
+  }
+
+  toggleSidebar(): void {
+    this.layoutService.toggleSidebar();
   }
 }
