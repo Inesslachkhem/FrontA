@@ -10,7 +10,7 @@ import { VenteService } from '../../services/vente.service';
   standalone: true,
   imports: [CommonModule, MatTableModule, HttpClientModule],
   templateUrl: './ventes.component.html',
-  styleUrl: './ventes.component.css',
+  styleUrls: ['./ventes.component.css'],
 })
 export class VentesComponent implements OnInit {
   ventes: Vente[] = [];

@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Promotion, Article } from '../../models/article.model';
+import { Article } from '../../models/article.model';
+import { Promotion } from '../../models/promotion.model';
 import { PromotionService } from '../../services/promotion.service';
 import { ArticleService } from '../../services/article.service';
 
@@ -109,18 +110,18 @@ import { ArticleService } from '../../services/article.service';
             >
               <div class="flex justify-between items-start">
                 <div>                  <h3 class="font-bold text-lg">
-                    {{ formatPercentage(promotion.tauxReduction) | number:'1.0-0' }}% OFF
+                    {{ formatPercentage(promotion['tauxReduction']) | number:'1.0-0' }}% OFF
                   </h3>
                   <p class="text-sm opacity-90">
-                    {{ promotion.article?.libelle || 'Loading...' }}
+                    {{ promotion['article']?.libelle || 'Loading...' }}
                   </p>
                 </div>
                 <div class="text-right">
                   <div class="text-lg font-bold">
-                    {{ promotion.prix_Vente_TND_Apres | currency : 'TND' }}
+                    {{ promotion['prix_Vente_TND_Apres'] | currency : 'TND' }}
                   </div>
                   <div class="text-sm line-through opacity-75">
-                    {{ promotion.prix_Vente_TND_Avant | currency : 'TND' }}
+                    {{ promotion['prix_Vente_TND_Avant'] | currency : 'TND' }}
                   </div>
                 </div>
               </div>
@@ -132,30 +133,59 @@ import { ArticleService } from '../../services/article.service';
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-600">Article Code:</span>
-                <span class="font-medium">{{ promotion.codeArticle }}</span>
-              </div>              <div class="flex justify-between">
-                <span class="text-gray-600">End Date:</span>
-                <span class="font-medium">{{
-                  promotion.dateFin | date : 'shortDate'
-                }}</span>
+                <span class="font-medium">{{ promotion['codeArticle'] }}</span>
               </div>
-              <div *ngIf="promotion.approvedBy" class="flex justify-between">
+              <div class="flex justify-between">
+                <span class="text-gray-600">End Date:</span>
+                <span class="font-medium">{{ promotion.dateFin | date : 'shortDate' }}</span>
+              </div>
+              <div *ngIf="promotion['approvedBy']" class="flex justify-between">
                 <span class="text-gray-600">Approved by:</span>
-                <span class="font-medium">{{ promotion.approvedBy }}</span>
+                <span class="font-medium">{{ promotion['approvedBy'] }}</span>
+              </div>
+              <!-- Champs IA supplémentaires -->
+              <div *ngIf="getExpectedVolumeImpact(promotion) !== undefined">
+                <span class="text-blue-700">Expected Volume Impact:</span>
+                <span class="font-medium">{{ getExpectedVolumeImpact(promotion) | number:'+1.1-1' }}%</span>
+              </div>
+              <div *ngIf="promotion.predictionConfidence !== undefined">
+                <span class="text-blue-700">Prediction Confidence:</span>
+                <span class="font-medium">{{ promotion.predictionConfidence | percent:'1.0-2' }}</span>
+              </div>
+              <div *ngIf="promotion.expectedRevenueImpact !== undefined">
+                <span class="text-blue-700">Expected Revenue Impact:</span>
+                <span class="font-medium">{{ promotion.expectedRevenueImpact | currency:'TND' }}</span>
+              </div>
+            </div>
+            <!-- Détails AI -->
+            <div *ngIf="promotion['aiPredictionResults'] || promotion['aiPredictions']" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div class="font-semibold text-blue-900 mb-2">
+                <i class="fas fa-robot mr-2"></i>AI Results
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                <div>
+                  <div><span class="text-blue-700">Prix Original:</span> <span class="font-medium">{{ (promotion['aiPredictionResults'] || promotion['aiPredictions'])?.current_price_tnd | currency:'TND' }}</span></div>
+                  <div><span class="text-blue-700">Prix Promotionnel:</span> <span class="font-medium">{{ (promotion['aiPredictionResults'] || promotion['aiPredictions'])?.promoted_price_tnd | currency:'TND' }}</span></div>
+                  <div><span class="text-blue-700">Réduction Recommandée:</span> <span class="font-medium">{{ (promotion['aiPredictionResults'] || promotion['aiPredictions'])?.adjusted_promotion_pct }}%</span></div>
+                </div>
+                <div>
+                  <div><span class="text-blue-700">Impact Volume:</span> <span class="font-medium" [class.text-green-600]="(promotion['aiPredictionResults']?.volume_impact_pct ?? promotion['aiPredictions']?.volume_impact_pct ?? 0) > 0">{{ (promotion['aiPredictionResults']?.volume_impact_pct ?? promotion['aiPredictions']?.volume_impact_pct) | number:'+1.1-1' }}%</span></div>
+                  <div><span class="text-blue-700">Impact CA:</span> <span class="font-medium" [class.text-green-600]="(promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd ?? 0) > 0">{{ (promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd) | currency:'TND' }}</span></div>
+                  <div><span class="text-blue-700">Volume Mensuel Projeté:</span> <span class="font-medium">{{ (promotion['aiPredictionResults'] || promotion['aiPredictions'])?.projected_monthly_volume }} unités</span></div>
+                </div>
               </div>
             </div>
           </div>
           <!-- Actions -->
           <div class="px-4 py-3 bg-gray-50 flex justify-end items-center">
-            <div *ngIf="!promotion.isAccepted" class="flex space-x-2">
-              <button
-                (click)="approvePromotion(promotion.id)"
+            <div *ngIf="!promotion['isAccepted']" class="flex space-x-2">              <button
+                (click)="promotion.id && approvePromotion(promotion.id)"
                 class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
               >
                 Approve
               </button>
               <button
-                (click)="rejectPromotion(promotion.id)"
+                (click)="promotion.id && rejectPromotion(promotion.id)"
                 class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
               >
                 Reject
@@ -220,7 +250,7 @@ import { ArticleService } from '../../services/article.service';
                 >Article *</label
               >
               <select
-                [(ngModel)]="currentPromotion.codeArticle"
+                [(ngModel)]="currentPromotion['codeArticle']"
                 name="codeArticle"
                 required
                 (change)="onArticleSelected()"
@@ -244,7 +274,7 @@ import { ArticleService } from '../../services/article.service';
                   >Current Price (TND)</label
                 >
                 <input
-                  [(ngModel)]="currentPromotion.prix_Vente_TND_Avant"
+                  [(ngModel)]="currentPromotion['prix_Vente_TND_Avant']"
                   name="prixAvant"
                   type="number"
                   step="0.01"
@@ -257,7 +287,7 @@ import { ArticleService } from '../../services/article.service';
                   >Reduction % *</label
                 >
                 <input
-                  [(ngModel)]="currentPromotion.tauxReduction"
+                  [(ngModel)]="currentPromotion['tauxReduction']"
                   name="tauxReduction"
                   type="number"
                   min="0"
@@ -281,7 +311,7 @@ import { ArticleService } from '../../services/article.service';
                 >New Price (TND)</label
               >
               <input
-                [(ngModel)]="currentPromotion.prix_Vente_TND_Apres"
+                [(ngModel)]="currentPromotion['prix_Vente_TND_Apres']"
                 name="prixApres"
                 type="number"
                 step="0.01"
@@ -305,6 +335,17 @@ import { ArticleService } from '../../services/article.service';
               <p *ngIf="showDateValidationError" class="mt-1 text-sm text-red-600">
                 End date must be after {{ getMinDate() | date:'mediumDate' }}
               </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Date de création *</label>
+              <input
+                [(ngModel)]="currentPromotion['dateCreation']"
+                name="dateCreation"
+                type="datetime-local"
+                required
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
             <div class="flex justify-end space-x-2 pt-4">
@@ -491,30 +532,29 @@ export class PromotionListComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
         (promotion) =>
-          promotion.codeArticle.toLowerCase().includes(term) ||
-          (promotion.article?.libelle &&
-            promotion.article.libelle.toLowerCase().includes(term))
+          (promotion['codeArticle'] && promotion['codeArticle'].toLowerCase().includes(term)) ||
+          (promotion['article']?.libelle && promotion['article'].libelle.toLowerCase().includes(term))
       );
     }
 
     // Reduction range filter
     if (this.minReduction !== null) {
       filtered = filtered.filter(
-        (promotion) => promotion.tauxReduction >= this.minReduction!
+        (promotion) => (promotion['tauxReduction'] ?? 0) >= this.minReduction!
       );
     }
     if (this.maxReduction !== null) {
       filtered = filtered.filter(
-        (promotion) => promotion.tauxReduction <= this.maxReduction!
+        (promotion) => (promotion['tauxReduction'] ?? 0) <= this.maxReduction!
       );
     }
 
     // Status filter
     if (this.statusFilter) {
       if (this.statusFilter === 'accepted') {
-        filtered = filtered.filter((promotion) => promotion.isAccepted);
+        filtered = filtered.filter((promotion) => promotion['isAccepted']);
       } else if (this.statusFilter === 'pending') {
-        filtered = filtered.filter((promotion) => !promotion.isAccepted);
+        filtered = filtered.filter((promotion) => !promotion['isAccepted']);
       }
     }
 
@@ -587,7 +627,7 @@ export class PromotionListComponent implements OnInit {
   }
 
   generateAIPromotion() {
-    if (!this.currentPromotion.codeArticle || !this.currentPromotion.dateFin) {
+    if (!this.currentPromotion['codeArticle'] || !this.currentPromotion['dateFin']) {
       alert('Please select both an article and a future end date for AI generation.');
       return;
     }
@@ -600,13 +640,13 @@ export class PromotionListComponent implements OnInit {
     this.aiGenerating = true;
 
     // Convert datetime-local to YYYY-MM-DD format
-    const targetDate = new Date(this.currentPromotion.dateFin)
+    const targetDate = new Date(this.currentPromotion['dateFin'])
       .toISOString()
       .split('T')[0];
 
     this.promotionService
       .generateAIPromotion(
-        this.currentPromotion.codeArticle,
+        this.currentPromotion['codeArticle'],
         targetDate,
         true // auto_save = true
       )
@@ -615,13 +655,38 @@ export class PromotionListComponent implements OnInit {
           this.aiGenerating = false;
           if (response.status === 'success') {
             const prediction = response.data.prediction;
-            console.log('AI Prediction Results:', prediction);
             this.aiPredictionResults = prediction;
-            
             // Mettre à jour automatiquement les champs du formulaire
-            this.currentPromotion.tauxReduction = prediction.adjusted_promotion_pct;
-            this.currentPromotion.prix_Vente_TND_Avant = prediction.current_price_tnd;
-            this.currentPromotion.prix_Vente_TND_Apres = prediction.promoted_price_tnd;
+            this.currentPromotion['tauxReduction'] = prediction.adjusted_promotion_pct;
+            this.currentPromotion['prix_Vente_TND_Avant'] = prediction.current_price_tnd;
+            this.currentPromotion['prix_Vente_TND_Apres'] = prediction.promoted_price_tnd;
+            // Mapper tous les champs IA pour la sauvegarde
+            const promotionToSave = {
+              ...this.currentPromotion,
+              adjusted_promotion_pct: prediction.adjusted_promotion_pct,
+              promoted_price_tnd: prediction.promoted_price_tnd,
+              current_price_tnd: prediction.current_price_tnd,
+              volume_impact_pct: prediction.volume_impact_pct,
+              revenue_impact_tnd: prediction.revenue_impact_tnd,
+              projected_monthly_volume: prediction.projected_monthly_volume,
+              predictionConfidence: prediction.confidence ?? prediction.prediction_confidence,
+              seasonalAdjustment: prediction.seasonal_adjustment,
+              temporalAdjustment: prediction.temporal_adjustment,
+              expectedVolumeImpact: prediction.volume_impact_pct ?? prediction.expected_volume_impact,
+              expectedRevenueImpact: prediction.revenue_impact_tnd ?? prediction.expected_revenue_impact,
+              aiPredictionResults: prediction,
+              dateCreation: new Date()
+            };
+            this.promotionService.create(promotionToSave as Promotion).subscribe({
+              next: () => {
+                this.loadPromotions();
+                this.closeModal();
+              },
+              error: (error) => {
+                console.error('Error creating promotion:', error);
+                alert('Error saving AI promotion.');
+              },
+            });
           } else {
             alert('Error generating AI promotion: ' + response.message);
           }
@@ -636,7 +701,7 @@ export class PromotionListComponent implements OnInit {
   }
 
   createManualPromotion() {
-    this.currentPromotion.dateCreation = new Date();
+    this.currentPromotion['dateCreation'] = new Date();
 
     this.promotionService.create(this.currentPromotion as Promotion).subscribe({
       next: () => {
@@ -657,10 +722,10 @@ export class PromotionListComponent implements OnInit {
 
   onArticleSelected() {
     const selectedArticle = this.articles.find(
-      (a) => a.codeArticle === this.currentPromotion.codeArticle
+      (a) => a.codeArticle === this.currentPromotion['codeArticle']
     );
     if (selectedArticle) {
-      this.currentPromotion.prix_Vente_TND_Avant =
+      this.currentPromotion['prix_Vente_TND_Avant'] =
         selectedArticle.prix_Vente_TND;
       this.calculatePromotionPrice();
     }
@@ -668,15 +733,15 @@ export class PromotionListComponent implements OnInit {
 
   calculatePromotionPrice() {
     if (
-      this.currentPromotion.prix_Vente_TND_Avant &&
-      this.currentPromotion.tauxReduction
+      this.currentPromotion['prix_Vente_TND_Avant'] &&
+      this.currentPromotion['tauxReduction']
     ) {
       const reduction =
-        (this.currentPromotion.prix_Vente_TND_Avant *
-          this.currentPromotion.tauxReduction) /
+        (this.currentPromotion['prix_Vente_TND_Avant'] *
+          this.currentPromotion['tauxReduction']) /
         100;
-      this.currentPromotion.prix_Vente_TND_Apres =
-        this.currentPromotion.prix_Vente_TND_Avant - reduction;
+      this.currentPromotion['prix_Vente_TND_Apres'] =
+        this.currentPromotion['prix_Vente_TND_Avant'] - reduction;
     }
   }
 
@@ -685,9 +750,9 @@ export class PromotionListComponent implements OnInit {
   }
 
   createPromotion() {
-    if (this.currentPromotion.tauxReduction) {
+    if (this.currentPromotion['tauxReduction']) {
       // Convertir le pourcentage en décimal avant l'envoi
-      this.currentPromotion.tauxReduction = this.convertPercentageToDecimal(this.currentPromotion.tauxReduction);
+      this.currentPromotion['tauxReduction'] = this.convertPercentageToDecimal(this.currentPromotion['tauxReduction']);
     }
     
     this.promotionService.create(this.currentPromotion as Promotion).subscribe({
@@ -702,14 +767,14 @@ export class PromotionListComponent implements OnInit {
   }
 
   getStatusClass(promotion: Promotion): string {
-    if (promotion.isAccepted) {
+    if (promotion['isAccepted']) {
       return 'bg-green-100 text-green-800';
     }
     return 'bg-yellow-100 text-yellow-800';
   }
 
   getStatusText(promotion: Promotion): string {
-    if (promotion.isAccepted) {
+    if (promotion['isAccepted']) {
       return 'Approved';
     }
     return 'Pending';
@@ -728,7 +793,21 @@ export class PromotionListComponent implements OnInit {
     }
   }
 
-  formatPercentage(value: number): number {
-    return value * 100;
+  formatPercentage(value: number | undefined): number {
+    return value ? value * 100 : 0;
+  }
+
+  openAddModal() {
+    this.showAddModal = true;
+  }
+
+  getExpectedVolumeImpact(promotion: any): number | undefined {
+    // Priorité : expectedVolumeImpact > volume_impact_pct > aiPredictionResults.volume_impact_pct > aiPredictions.volume_impact_pct
+    return (
+      promotion.expectedVolumeImpact ??
+      promotion.volume_impact_pct ??
+      promotion.aiPredictionResults?.volume_impact_pct ??
+      promotion.aiPredictions?.volume_impact_pct
+    );
   }
 }

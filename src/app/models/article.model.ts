@@ -1,3 +1,7 @@
+
+import { Promotion } from './promotion.model';
+import { Vente } from './vente.model';
+
 export interface Article {
   id: number;
   codeArticle: string;
@@ -43,21 +47,6 @@ export interface AIPrediction {
   projected_monthly_volume: number;
 }
 
-export interface Promotion {
-  id: number;
-  dateFin: Date;
-  tauxReduction: number;
-  codeArticle: string;
-  article?: Article;
-  prix_Vente_TND_Avant: number;
-  prix_Vente_TND_Apres: number;
-  isAccepted: boolean;
-  dateCreation: Date;
-  dateApproval?: Date;
-  approvedBy?: string;
-  aiPredictions?: AIPrediction;
-}
-
 export interface Stock {
   id: number;
   quantitePhysique: number;
@@ -72,8 +61,6 @@ export interface Stock {
   depotId: number;
   depot?: Depot;
 }
-
-import { Vente } from './vente.model';
 
 export interface Depot {
   id: number;

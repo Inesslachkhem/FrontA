@@ -4,7 +4,8 @@ import { RouterModule } from '@angular/router';
 import { ArticleService } from '../../services/article.service';
 import { PromotionService } from '../../services/promotion.service';
 import { AuthService } from '../../services/auth.service';
-import { Article, Promotion } from '../../models/article.model';
+import { Article } from '../../models/article.model';
+import { Promotion } from '../../models/promotion.model';
 import { User, UserType } from '../../models/user.model';
 import { AdminStatsWidgetComponent } from '../../components/widgets/admin-stats-widget.component';
 
@@ -74,7 +75,7 @@ export class DashboardComponent implements OnInit {
       next: (promotions) => {
         this.promotions = promotions;
         this.activePromotionsCount = promotions.filter(
-          (p) => p.isAccepted && new Date(p.dateFin) > new Date()
+          (p) => p['isAccepted'] && new Date(p.dateFin) > new Date()
         ).length;
 
         this.generateArticlesWithPromotions();
@@ -93,20 +94,22 @@ export class DashboardComponent implements OnInit {
     this.articlesWithPromotions = this.articles
       .map((article) => {
         const articlePromotions = this.promotions.filter(
-          (p) => p.codeArticle === article.codeArticle && p.isAccepted
+          (p) => p['codeArticle'] === article.codeArticle && p['isAccepted']
         );
 
         if (articlePromotions.length > 0) {
-          const bestPromotion = articlePromotions.reduce((best, current) =>
-            current.tauxReduction > best.tauxReduction ? current : best
-          );
+          const bestPromotion = articlePromotions.reduce((best, current) => {
+            if (!best) return current;
+            if (!current) return best;
+            return (current?.['tauxReduction'] ?? 0) > (best?.['tauxReduction'] ?? 0) ? current : best;
+          }, articlePromotions[0]);
 
           return {
             ...article,
             hasPromotion: true,
             promotionCount: articlePromotions.length,
-            bestDiscount: bestPromotion.tauxReduction,
-            discountedPrice: bestPromotion.prix_Vente_TND_Apres,
+            bestDiscount: bestPromotion['tauxReduction'],
+            discountedPrice: bestPromotion['prix_Vente_TND_Apres'],
           };
         }
 

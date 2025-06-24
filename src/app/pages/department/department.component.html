@@ -1,7 +1,7 @@
 <!-- Depots Management -->
 <div class="space-y-6">
   <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
+  <div class="flex justify-between items-center">
     <div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         Depots Management
@@ -10,18 +10,16 @@
         Manage your warehouse locations and storage depots
       </p>
     </div>
-    <div class="flex gap-2">
-      <button
-        (click)="openModal()"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-      >
-        <i class="fas fa-plus"></i>
-        <span>Add Depot</span>
-      </button>
-    </div>
+    <button
+      (click)="openModal()"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+    >
+      <i class="fas fa-plus"></i>
+      <span>Add Depot</span>
+    </button>
   </div>
 
-  <!-- Search and Filter -->
+  <!-- Search and Import -->
   <div
     class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700"
   >
@@ -37,32 +35,31 @@
           class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
       </div>
-      <!-- Advanced Filters -->
-      <div class="flex flex-1 gap-4">
+
+      <!-- Import -->
+      <div class="flex items-center space-x-4">
         <input
-          type="text"
-          [(ngModel)]="filterCode"
-          (ngModelChange)="filterDepots()"
-          placeholder="Filter by code..."
-          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          type="file"
+          (change)="onFileSelected($event)"
+          accept=".csv"
+          class="hidden"
+          #fileInput
         />
-        <input
-          type="text"
-          [(ngModel)]="filterLibelle"
-          (ngModelChange)="filterDepots()"
-          placeholder="Filter by libelle..."
-          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-        <select
-          [(ngModel)]="filterTypeDepot"
-          (ngModelChange)="filterDepots()"
-          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        <button
+          (click)="fileInput.click()"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
         >
-          <option value="">All Types</option>
-          <option value="PRINCIPAL">PRINCIPAL</option>
-          <option value="SECONDAIRE">SECONDAIRE</option>
-          <option value="TEMPORAIRE">TEMPORAIRE</option>
-        </select>
+          <i class="fas fa-upload"></i>
+          <span>Select CSV</span>
+        </button>
+        <button
+          (click)="importDepots()"
+          [disabled]="!selectedFile"
+          class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+        >
+          <i class="fas fa-file-import"></i>
+          <span>Import</span>
+        </button>
       </div>
     </div>
   </div>

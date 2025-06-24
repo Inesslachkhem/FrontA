@@ -24,15 +24,6 @@ export class DepartmentComponent implements OnInit {
 
   // File upload
   selectedFile: File | null = null;
-  importMessage: string | null = null;
-
-  // Filtres avancés
-  filterCode = '';
-  filterLibelle = '';
-  filterTypeDepot = '';
-
-  // Import modal
-  isImportModalOpen = false;
 
   constructor(private depotService: DepotService) {}
 
@@ -55,31 +46,16 @@ export class DepartmentComponent implements OnInit {
     });
   }
   filterDepots() {
-    let filtered = this.depots;
-    if (this.searchTerm) {
-      filtered = filtered.filter(
+    if (!this.searchTerm) {
+      this.filteredDepots = this.depots;
+    } else {
+      this.filteredDepots = this.depots.filter(
         (depot) =>
           depot.libelle.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           depot.code.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           depot.typeDepot?.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
-    if (this.filterCode) {
-      filtered = filtered.filter((depot) =>
-        depot.code.toLowerCase().includes(this.filterCode.toLowerCase())
-      );
-    }
-    if (this.filterLibelle) {
-      filtered = filtered.filter((depot) =>
-        depot.libelle.toLowerCase().includes(this.filterLibelle.toLowerCase())
-      );
-    }
-    if (this.filterTypeDepot) {
-      filtered = filtered.filter((depot) =>
-        depot.typeDepot?.trim().toLowerCase() === this.filterTypeDepot.trim().toLowerCase()
-      );
-    }
-    this.filteredDepots = filtered;
   }
 
   openModal(depot?: Depot) {
@@ -133,29 +109,15 @@ export class DepartmentComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
-  openImportModal() {
-    this.isImportModalOpen = true;
-    this.selectedFile = null;
-    this.importMessage = null;
-  }
-  closeImportModal() {
-    this.isImportModalOpen = false;
-    this.selectedFile = null;
-    this.importMessage = null;
-  }
-
   importDepots() {
     if (this.selectedFile) {
       this.depotService.importDepots(this.selectedFile).subscribe({
         next: (response) => {
-          this.importMessage = response?.message || 'Importation réussie !';
+          console.log('Import successful:', response);
           this.loadDepots();
           this.selectedFile = null;
-          this.closeImportModal();
         },
-        error: (error) => {
-          this.importMessage = error?.error?.error || 'Erreur lors de l\'importation.';
-        },
+        error: (error) => console.error('Error importing depots:', error),
       });
     }
   }
