@@ -85,44 +85,41 @@ import { ArticleService } from '../../services/article.service';
             <option value="pending">Pending</option>
           </select>
         </div>
-      </div>
-
-      <!-- Promotions Grid -->
+      </div>   
+         <!-- Promotions Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           *ngFor="let promotion of filteredPromotions"
           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
         >
-          <!-- Status Badge -->
-          <div class="relative">
-            <div class="absolute top-2 right-2 z-10">
-              <span
-                [class]="getStatusClass(promotion)"
-                class="px-2 py-1 rounded-full text-xs font-medium"
-              >
-                {{ getStatusText(promotion) }}
-              </span>
-            </div>
-
-            <!-- Promotion Header -->
-            <div
-              class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4"
-            >
-              <div class="flex justify-between items-start">
-                <div>                  <h3 class="font-bold text-lg">
-                    {{ formatPercentage(promotion['tauxReduction']) | number:'1.0-0' }}% OFF
-                  </h3>
+          <!-- Promotion Header -->
+          <div
+            class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-bold text-lg">
+                  {{ formatPercentage(promotion['tauxReduction']) | number:'1.0-0' }}% OFF
+                </h3>
+                <div class="flex items-center gap-2">
                   <p class="text-sm opacity-90">
                     {{ promotion['article']?.libelle || 'Loading...' }}
                   </p>
+                  <!-- Status Badge -->
+                  <span
+                    [class]="getStatusClass(promotion)"
+                    class="px-2 py-0.5 rounded-full text-xs font-medium"
+                  >
+                    {{ getStatusText(promotion) }}
+                  </span>
                 </div>
-                <div class="text-right">
-                  <div class="text-lg font-bold">
-                    {{ promotion['prix_Vente_TND_Apres'] | currency : 'TND' }}
-                  </div>
-                  <div class="text-sm line-through opacity-75">
-                    {{ promotion['prix_Vente_TND_Avant'] | currency : 'TND' }}
-                  </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold">
+                  {{ promotion['prix_Vente_TND_Apres'] | currency : 'TND' }}
+                </div>
+                <div class="text-sm line-through opacity-75">
+                  {{ promotion['prix_Vente_TND_Avant'] | currency : 'TND' }}
                 </div>
               </div>
             </div>
@@ -176,19 +173,21 @@ import { ArticleService } from '../../services/article.service';
               </div>
             </div>
           </div>
+          
           <!-- Actions -->
-          <div class="px-4 py-3 bg-gray-50 flex justify-end items-center">
-            <div *ngIf="!promotion['isAccepted']" class="flex space-x-2">              <button
-                (click)="promotion.id && approvePromotion(promotion.id)"
-                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-              >
-                Approve
-              </button>
+          <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
+            <button
+              (click)="promotion.id && deletePromotion(promotion.id)"
+              class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs flex items-center"
+            >
+              <i class="fas fa-trash-alt mr-1"></i> Delete
+            </button>
+            <div *ngIf="!promotion['isAccepted']" class="flex space-x-2">
               <button
-                (click)="promotion.id && rejectPromotion(promotion.id)"
-                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                (click)="promotion.id && approvePromotion(promotion.id)"
+                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-xs flex items-center"
               >
-                Reject
+                <i class="fas fa-check mr-1"></i> Approve
               </button>
             </div>
           </div>
@@ -320,6 +319,18 @@ import { ArticleService } from '../../services/article.service';
               />
             </div>
 
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Date de création *</label>
+              <input
+                [(ngModel)]="currentPromotion['dateCreation']"
+                name="dateCreation"
+                type="datetime-local"
+                required
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
             <div>
               <label class="block text-sm font-medium text-gray-700">End Date *</label>
               <input
@@ -335,17 +346,6 @@ import { ArticleService } from '../../services/article.service';
               <p *ngIf="showDateValidationError" class="mt-1 text-sm text-red-600">
                 End date must be after {{ getMinDate() | date:'mediumDate' }}
               </p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Date de création *</label>
-              <input
-                [(ngModel)]="currentPromotion['dateCreation']"
-                name="dateCreation"
-                type="datetime-local"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
 
             <div class="flex justify-end space-x-2 pt-4">
@@ -577,31 +577,34 @@ export class PromotionListComponent implements OnInit {
       });
     }
   }
+    
 
-  rejectPromotion(id: number) {
+
+  deletePromotion(id: number) {
     if (
       confirm(
-        'Are you sure you want to reject this promotion? This action cannot be undone.'
+        'Are you sure you want to delete this promotion? This action cannot be undone.'
       )
     ) {
-      this.promotionService.reject(id, 'Admin User').subscribe({
-        next: (response) => {
-          console.log('Promotion rejected successfully:', response);
+      this.promotionService.delete(id).subscribe({
+        next: () => {
+          console.log('Promotion deleted successfully');
           this.loadPromotions();
         },
         error: (error) => {
-          console.error('Error rejecting promotion:', error);
+          console.error('Error deleting promotion:', error);
           alert(
-            'Failed to reject promotion: ' +
+            'Failed to delete promotion: ' +
               (error.error?.message || error.message)
           );
         },
       });
     }
   }
+  
   savePromotion() {
     if (this.useAIGeneration) {
-      this.generateAIPromotion();
+      this.predictAIPromotion(); // Renamed from generateAIPromotion for clarity
     } else {
       this.createManualPromotion();
     }
@@ -626,7 +629,7 @@ export class PromotionListComponent implements OnInit {
     }
   }
 
-  generateAIPromotion() {
+  predictAIPromotion() {
     if (!this.currentPromotion['codeArticle'] || !this.currentPromotion['dateFin']) {
       alert('Please select both an article and a future end date for AI generation.');
       return;
@@ -644,11 +647,11 @@ export class PromotionListComponent implements OnInit {
       .toISOString()
       .split('T')[0];
 
+    // Use predictPromotion instead of generateAIPromotion to avoid auto-saving
     this.promotionService
-      .generateAIPromotion(
+      .predictPromotion(
         this.currentPromotion['codeArticle'],
-        targetDate,
-        true // auto_save = true
+        targetDate
       )
       .subscribe({
         next: (response) => {
@@ -765,12 +768,11 @@ export class PromotionListComponent implements OnInit {
       }
     });
   }
-
   getStatusClass(promotion: Promotion): string {
     if (promotion['isAccepted']) {
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-500 text-white';
     }
-    return 'bg-yellow-100 text-yellow-800';
+    return 'bg-yellow-500 text-white';
   }
 
   getStatusText(promotion: Promotion): string {

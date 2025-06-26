@@ -89,26 +89,27 @@ export class PromotionService {
     return this.http.get<Promotion[]>(`${this.apiUrl}/pending`);
   }
 
-  // Generate AI promotion using Flask API
+  // Generate AI promotion using Flask API (deprecated - use predictPromotion instead)
   generateAIPromotion(
     articleCode: string,
     targetDate: string,
     autoSave: boolean = true
   ): Observable<any> {
-    const payload = {
-      article_code: articleCode,
-      target_date: targetDate,
-      auto_save: autoSave,
-    };
-    return this.http.post<any>(this.apiUrlV2, payload);
+    // Redirect to predictPromotion for consistent data source
+    return this.predictPromotion(articleCode, targetDate);
   }
 
-  // Predict promotion without saving (using Flask API)
+  // Predict promotion without saving (using Flask API) - Primary method for AI predictions
   predictPromotion(articleCode: string, targetDate: string): Observable<any> {
     const payload = {
       article_code: articleCode,
       target_date: targetDate,
     };
     return this.http.post<any>('http://localhost:5000/api/predict', payload);
+  }
+
+  // Save AI-generated promotion after prediction
+  saveAIPromotion(promotionData: any): Observable<Promotion> {
+    return this.http.post<Promotion>(this.apiUrl, promotionData);
   }
 }
