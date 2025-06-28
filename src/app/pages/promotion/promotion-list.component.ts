@@ -748,26 +748,6 @@ export class PromotionListComponent implements OnInit {
     }
   }
 
-  convertPercentageToDecimal(value: number): number {
-    return value / 100;
-  }
-
-  createPromotion() {
-    if (this.currentPromotion['tauxReduction']) {
-      // Convertir le pourcentage en décimal avant l'envoi
-      this.currentPromotion['tauxReduction'] = this.convertPercentageToDecimal(this.currentPromotion['tauxReduction']);
-    }
-    
-    this.promotionService.create(this.currentPromotion as Promotion).subscribe({
-      next: () => {
-        this.loadPromotions();
-        this.closeModal();
-      },
-      error: (error) => {
-        console.error('Error creating promotion:', error);
-      }
-    });
-  }
   getStatusClass(promotion: Promotion): string {
     if (promotion['isAccepted']) {
       return 'bg-green-500 text-white';
@@ -797,10 +777,6 @@ export class PromotionListComponent implements OnInit {
 
   formatPercentage(value: number | undefined): number {
     return value ? value * 100 : 0;
-  }
-
-  openAddModal() {
-    this.showAddModal = true;
   }
 
   getExpectedVolumeImpact(promotion: any): number | undefined {

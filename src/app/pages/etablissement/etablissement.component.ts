@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EtablissementService } from '../../services/etablissement.service';
@@ -12,6 +12,8 @@ import { Etablissement } from '../../models/article.model';
   styleUrl: './etablissement.component.css',
 })
 export class EtablissementComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  
   etablissements: Etablissement[] = [];
   filteredEtablissements: Etablissement[] = [];
   loading = false;
@@ -118,17 +120,41 @@ export class EtablissementComponent implements OnInit {
 
   importEtablissements() {
     if (this.selectedFile) {
+      this.loading = true;
       this.etablissementService
         .importEtablissements(this.selectedFile)
         .subscribe({
           next: (response) => {
             console.log('Import successful:', response);
+            alert(response.message || 'Import successful');
             this.loadEtablissements();
             this.selectedFile = null;
+            // Reset the file input
+            if (this.fileInput) {
+              this.fileInput.nativeElement.value = '';
+            }
+            this.loading = false;
           },
-          error: (error) =>
-            console.error('Error importing etablissements:', error),
+          error: (error) => {
+            console.error('Error importing etablissements:', error);
+            let errorMessage = 'Une erreur est survenue lors de l\'importation.';
+            
+            if (error.error) {
+              if (typeof error.error === 'string') {
+                errorMessage = error.error;
+              } else if (error.error.message) {
+                errorMessage = error.error.message;
+              }
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            
+            alert(errorMessage);
+            this.loading = false;
+          },
         });
+    } else {
+      alert('Veuillez sélectionner un fichier CSV.');
     }
   }
 }
