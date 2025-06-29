@@ -167,7 +167,16 @@ import { ArticleService } from '../../services/article.service';
                 </div>
                 <div>
                   <div><span class="text-blue-700">Impact Volume:</span> <span class="font-medium" [class.text-green-600]="(promotion['aiPredictionResults']?.volume_impact_pct ?? promotion['aiPredictions']?.volume_impact_pct ?? 0) > 0">{{ (promotion['aiPredictionResults']?.volume_impact_pct ?? promotion['aiPredictions']?.volume_impact_pct) | number:'+1.1-1' }}%</span></div>
-                  <div><span class="text-blue-700">Impact CA:</span> <span class="font-medium" [class.text-green-600]="(promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd ?? 0) > 0">{{ (promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd) | currency:'TND' }}</span></div>
+                  <div><span class="text-blue-700">Impact CA:</span> 
+                       <span class="font-medium" 
+                             [class.text-green-600]="(promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd ?? 0) > 0"
+                             [class.text-red-600]="(promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd ?? 0) < 0">
+                         {{ (promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd) | currency:'TND' }}
+                         <i *ngIf="(promotion['aiPredictionResults']?.revenue_impact_tnd ?? promotion['aiPredictions']?.revenue_impact_tnd ?? 0) < 0" 
+                            class="fas fa-info-circle ml-1 text-amber-500 text-xs"
+                            title="Impact négatif sur CA - Stratégie de rotation de stock"></i>
+                       </span>
+                  </div>
                   <div><span class="text-blue-700">Volume Mensuel Projeté:</span> <span class="font-medium">{{ (promotion['aiPredictionResults'] || promotion['aiPredictions'])?.projected_monthly_volume }} unités</span></div>
                 </div>
               </div>
@@ -406,8 +415,13 @@ import { ArticleService } from '../../services/article.service';
                 </div>
                 <div class="flex justify-between items-center">
                   <span class="text-blue-700">Impact sur le CA:</span>
-                  <span class="font-medium" [class.text-green-600]="aiPredictionResults.revenue_impact_tnd > 0">
+                  <span class="font-medium" 
+                        [class.text-green-600]="aiPredictionResults.revenue_impact_tnd > 0"
+                        [class.text-red-600]="aiPredictionResults.revenue_impact_tnd < 0">
                     {{ aiPredictionResults.revenue_impact_tnd | currency:'TND' }}
+                    <i *ngIf="aiPredictionResults.revenue_impact_tnd < 0" 
+                       class="fas fa-exclamation-triangle ml-1 text-amber-500"
+                       title="Impact négatif - Peut être justifié pour la rotation de stock"></i>
                   </span>
                 </div>
                 <div class="flex justify-between items-center">
@@ -417,6 +431,27 @@ import { ArticleService } from '../../services/article.service';
               </div>
             </div>
 
+            
+            <!-- Alerte pour impact CA négatif -->
+            <div *ngIf="aiPredictionResults && aiPredictionResults.revenue_impact_tnd < 0" 
+                 class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div class="flex items-start">
+                <i class="fas fa-info-circle text-amber-600 mt-1 mr-2"></i>
+                <div class="text-sm text-amber-800">
+                  <strong>Impact CA négatif détecté</strong><br>
+                  Cette promotion réduit le chiffre d'affaires mais peut être justifiée pour :
+                  <ul class="mt-1 ml-4 list-disc">
+                    <li>Rotation des stocks excédentaires</li>
+                    <li>Fidélisation et acquisition de nouveaux clients</li>
+                    <li>Positionnement concurrentiel</li>
+                  </ul>
+                  <div class="mt-2 text-xs">
+                    Volume attendu: +{{ aiPredictionResults.volume_impact_pct | number:'1.1-1' }}% 
+                    | Réduction prix: {{ aiPredictionResults.adjusted_promotion_pct }}%
+                  </div>
+                </div>
+              </div>
+            </div>
             
           </div>
         </div>
