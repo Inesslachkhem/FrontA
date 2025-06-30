@@ -119,4 +119,31 @@ export class AuthService {
         })
       );
   }
+
+  isTokenValid(): boolean {
+    const token = this.tokenValue;
+    if (!token) return false;
+
+    try {
+      // Decode JWT without verification (just to check expiry)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convert to milliseconds
+      return Date.now() < exp;
+    } catch {
+      return false;
+    }
+  }
+
+  getTokenExpirationDate(): Date | null {
+    const token = this.tokenValue;
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000;
+      return new Date(exp);
+    } catch {
+      return null;
+    }
+  }
 }

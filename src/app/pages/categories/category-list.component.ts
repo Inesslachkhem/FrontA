@@ -241,7 +241,7 @@ import { CategorieService } from '../../services/categorie.service';
                     ALL data in the database!
                   </p>
                   <p>
-                    All existing categories, articles, stocks, promotions, and
+                    All existing categories, articles, stocks, and
                     sales will be deleted.
                   </p>
                 </div>
@@ -432,7 +432,7 @@ export class CategoryListComponent implements OnInit {
 
     // Show warning confirmation
     const confirmed = confirm(
-      `⚠️ COMPLETE DATABASE REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing categories\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing promotions\n✗ Delete ALL existing sales\n\nAnd replace everything with data from: ${this.selectedFile.name}\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
+      `⚠️ COMPLETE DATABASE REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing categories\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing sales\n\nAnd replace everything with data from: ${this.selectedFile.name}\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
     );
 
     if (!confirmed) {

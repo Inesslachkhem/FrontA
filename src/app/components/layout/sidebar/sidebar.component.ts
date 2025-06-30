@@ -23,6 +23,8 @@ interface MenuItem {
 })
 export class SidebarComponent implements OnInit {
   isCollapsed = false;
+  isMobile = false;
+  isMobileOpen = false;
   currentUser: User | null = null;
   userTypeEnum = UserType; // Make UserType enum available in template
 
@@ -42,20 +44,26 @@ export class SidebarComponent implements OnInit {
       expanded: false,
     },
     {
+      label: 'Promotions',
+      icon: 'fas fa-percentage',
+      route: '/promotions',
+    },
+    {
       label: 'Ventes',
       icon: 'fas fa-shopping-cart',
       route: '/ventes',
     },
     {
-      label: 'Promotion',
-      icon: 'fas fa-bullseye',
-      route: '/promotion',
-    },
-    {
       label: 'Stock',
       icon: 'fas fa-boxes',
       route: '/stock',
-    },    {
+    },
+    {
+      label: 'Chat',
+      icon: 'fas fa-comments',
+      route: '/chat',
+    },
+    {
       label: 'Depots',
       icon: 'fas fa-warehouse',
       route: '/department',
@@ -102,9 +110,25 @@ export class SidebarComponent implements OnInit {
     this.layoutService.sidebarCollapsed$.subscribe((collapsed) => {
       this.isCollapsed = collapsed;
     });
+
+    // Subscribe to mobile state
+    this.layoutService.isMobile$.subscribe((mobile) => {
+      this.isMobile = mobile;
+    });
+
+    // Subscribe to mobile sidebar open state
+    this.layoutService.sidebarMobileOpen$.subscribe((open) => {
+      this.isMobileOpen = open;
+    });
   }
   toggleSidebar(): void {
     this.layoutService.toggleSidebar();
+  }
+
+  closeMobileSidebar(): void {
+    if (this.isMobile) {
+      this.layoutService.closeMobileSidebar();
+    }
   }
 
   toggleSubmenu(item: MenuItem): void {
@@ -122,5 +146,20 @@ export class SidebarComponent implements OnInit {
 
   get filteredMenuItems(): MenuItem[] {
     return this.menuItems.filter((item) => this.isMenuItemVisible(item));
+  }
+
+  getSidebarClasses(): string {
+    let classes = '';
+    
+    if (this.isMobile) {
+      // Mobile: fixed overlay sidebar
+      classes = 'fixed top-0 left-0 z-50 w-64 h-screen transform transition-transform duration-300';
+      classes += this.isMobileOpen ? ' translate-x-0' : ' -translate-x-full';
+    } else {
+      // Desktop: normal sidebar with collapse
+      classes = this.isCollapsed ? 'w-16' : 'w-64';
+    }
+    
+    return classes;
   }
 }

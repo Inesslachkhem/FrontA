@@ -7,8 +7,6 @@ import { CategoriesComponent } from './pages/categories/categories.component';
 import { CategoryListComponent } from './pages/categories/category-list.component';
 import { VentesComponent } from './pages/ventes/ventes.component';
 import { VenteListComponent } from './pages/ventes/vente-list.component';
-import { PromotionComponent } from './pages/promotion/promotion.component';
-import { PromotionListComponent } from './pages/promotion/promotion-list.component';
 import { StockComponent } from './pages/stock/stock.component';
 import { StockListComponent } from './pages/stock/stock-list.component';
 import { DepartmentComponent } from './pages/department/department.component';
@@ -18,6 +16,8 @@ import { UserManagementComponent } from './pages/users/user-management.component
 import { UserProfileComponent } from './pages/users/user-profile.component';
 import { AuthGuard } from './guards/auth.guard';
 import { VerifyCodeComponent } from './components/verify-code/verify-code.component';
+import { ChatComponent } from './pages/chat/chat.component';
+import { PromotionsComponent } from './pages/promotions/promotions.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -31,12 +31,13 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'articles', component: ArticleListComponent },
       { path: 'categories', component: CategoryListComponent },
+      { path: 'promotions', component: PromotionsComponent },
       { path: 'ventes', component: VenteListComponent },
-      { path: 'promotion', component: PromotionListComponent },
       { path: 'stock', component: StockListComponent },
       { path: 'department', component: DepartmentComponent },
       { path: 'etablissement', component: EtablissementComponent },
       { path: 'users', component: UserManagementComponent },
+      { path: 'chat', component: ChatComponent },
       { path: 'profile', component: UserProfileComponent },
       { path: 'admin/profile', component: UserProfileComponent },
       { path: 'admin/stats', component: DashboardComponent }, // Reuse dashboard for now

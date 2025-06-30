@@ -1,14 +1,20 @@
+<!-- Mobile Overlay (only visible on mobile when sidebar is open) -->
+<div
+  *ngIf="isMobile && isMobileOpen"
+  class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+  (click)="closeMobileSidebar()"
+></div>
+
 <!-- Sidebar -->
 <div
   class="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300"
-  [class.w-64]="!isCollapsed"
-  [class.w-16]="isCollapsed"
+  [class]="getSidebarClasses()"
 >
   <!-- Sidebar Header -->
   <div
     class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700"
   >
-    <div class="flex items-center space-x-2" *ngIf="!isCollapsed">
+    <div class="flex items-center space-x-2" *ngIf="!isCollapsed || isMobile">
       <div
         class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center"
       >
@@ -21,8 +27,21 @@
     <button
       (click)="toggleSidebar()"
       class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+      [class.hidden]="isMobile"
     >
-      <i class="fas fa-bars text-gray-600 dark:text-gray-300"></i>
+      <i 
+        class="fas text-gray-600 dark:text-gray-300"
+        [class.fa-bars]="isCollapsed"
+        [class.fa-times]="!isCollapsed"
+      ></i>
+    </button>
+    <!-- Mobile close button -->
+    <button
+      *ngIf="isMobile"
+      (click)="closeMobileSidebar()"
+      class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 md:hidden"
+    >
+      <i class="fas fa-times text-gray-600 dark:text-gray-300"></i>
     </button>
   </div>
   <!-- Navigation Menu -->
@@ -34,19 +53,26 @@
           [routerLink]="item.route"
           routerLinkActive="bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-r-2 border-primary-600"
           class="flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
+          [title]="isCollapsed && !isMobile ? item.label : ''"
+          (click)="isMobile ? closeMobileSidebar() : null"
         >
           <i
             [class]="item.icon"
             class="flex-shrink-0 w-5 h-5 mr-3 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+            [class.mr-0]="isCollapsed && !isMobile"
+            [class.justify-center]="isCollapsed && !isMobile"
           ></i>
-          <span *ngIf="!isCollapsed" class="transition-opacity duration-200">{{
-            item.label
-          }}</span>
+          <span 
+            *ngIf="!isCollapsed || isMobile" 
+            class="transition-opacity duration-200"
+          >
+            {{ item.label }}
+          </span>
         </a>
       </div>
 
       <!-- Menu Item with children -->
-      <div *ngIf="item.children">
+      <div *ngIf="item.children && (!isCollapsed || isMobile)">
         <button
           (click)="toggleSubmenu(item)"
           class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
@@ -56,14 +82,9 @@
               [class]="item.icon"
               class="flex-shrink-0 w-5 h-5 mr-3 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
             ></i>
-            <span
-              *ngIf="!isCollapsed"
-              class="transition-opacity duration-200"
-              >{{ item.label }}</span
-            >
+            <span class="transition-opacity duration-200">{{ item.label }}</span>
           </div>
           <i
-            *ngIf="!isCollapsed"
             class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200"
             [class.rotate-180]="item.expanded"
           ></i>
@@ -71,7 +92,7 @@
 
         <!-- Submenu -->
         <div
-          *ngIf="item.expanded && !isCollapsed"
+          *ngIf="item.expanded"
           class="ml-8 mt-2 space-y-1 animate-slide-down"
         >
           <a
@@ -79,17 +100,52 @@
             [routerLink]="child.route"
             routerLinkActive="bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300"
             class="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+            (click)="isMobile ? closeMobileSidebar() : null"
           >
             <i [class]="child.icon" class="flex-shrink-0 w-4 h-4 mr-2"></i>
             {{ child.label }}
           </a>
         </div>
       </div>
+
+      <!-- Collapsed menu item with children (desktop only) -->
+      <div *ngIf="item.children && isCollapsed && !isMobile" class="relative group">
+        <button
+          class="flex items-center justify-center w-full px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+          [title]="item.label"
+        >
+          <i
+            [class]="item.icon"
+            class="w-5 h-5 text-gray-500 dark:text-gray-400"
+          ></i>
+        </button>
+        
+        <!-- Tooltip submenu for collapsed state -->
+        <div class="absolute left-full top-0 ml-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+          <div class="p-2">
+            <div class="px-3 py-2 text-sm font-medium text-gray-800 dark:text-white border-b border-gray-200 dark:border-gray-700 mb-2">
+              {{ item.label }}
+            </div>
+            <a
+              *ngFor="let child of item.children"
+              [routerLink]="child.route"
+              routerLinkActive="bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300"
+              class="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+            >
+              <i
+                [class]="child.icon"
+                class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500"
+              ></i>
+              <span>{{ child.label }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </ng-container>
   </nav>
   <!-- Sidebar Footer -->
   <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-    <div class="flex items-center space-x-3" *ngIf="!isCollapsed">
+    <div class="flex items-center space-x-3" *ngIf="!isCollapsed || isMobile">
       <div
         class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center"
       >
@@ -125,7 +181,7 @@
         </div>
       </div>
     </div>
-    <div class="flex justify-center" *ngIf="isCollapsed">
+    <div class="flex justify-center" *ngIf="isCollapsed && !isMobile">
       <div
         class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center"
       >

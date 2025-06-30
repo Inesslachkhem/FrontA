@@ -33,42 +33,27 @@ export class MainLayoutComponent implements OnInit {
     @Inject(PLATFORM_ID) private platformId: Object,
     private layoutService: LayoutService
   ) {}
+  
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.checkScreenSize();
-    }
+    // Subscribe to layout service observables
+    this.layoutService.isMobile$.subscribe((mobile) => {
+      this.isMobile = mobile;
+    });
 
-    // Subscribe to sidebar collapse state
+    this.layoutService.sidebarMobileOpen$.subscribe((open) => {
+      this.sidebarOpen = open;
+    });
+
     this.layoutService.sidebarCollapsed$.subscribe((collapsed) => {
       this.sidebarCollapsed = collapsed;
     });
   }
 
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.checkScreenSize();
-    }
-  }
-
-  private checkScreenSize(): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      this.isMobile = window.innerWidth < 768;
-      if (!this.isMobile) {
-        this.sidebarOpen = false;
-      }
-    }
-  }
-
   toggleMobileSidebar(): void {
-    if (this.isMobile) {
-      this.sidebarOpen = !this.sidebarOpen;
-    }
+    this.layoutService.toggleSidebar();
   }
 
   closeMobileSidebar(): void {
-    if (this.isMobile) {
-      this.sidebarOpen = false;
-    }
+    this.layoutService.closeMobileSidebar();
   }
 }

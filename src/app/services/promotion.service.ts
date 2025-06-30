@@ -1,115 +1,359 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Promotion } from '../models/promotion.model';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { 
+  Promotion, 
+  PromotionAnalysis, 
+  PromotionGeneration, 
+  Category, 
+  PromotionStats 
+} from '../models/promotion.model';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class PromotionService {
-  private apiUrl = 'http://localhost:5256/api/Promotion'; // Adjust URL as needed
-  private apiUrlV2 = 'http://localhost:5000/api/generate-and-save'; // Adjust URL as needed
+  private apiUrl = environment.apiUrl; // Use environment configuration
+  private promotionsSubject = new BehaviorSubject<Promotion[]>([]);
+  public promotions$ = this.promotionsSubject.asObservable();
+
+  private httpOptions = {
+    headers: new HttpHeaders({
+      'Content-Type': 'application/json'
+    })
+  };
+
   constructor(private http: HttpClient) {}
 
-  // Get all promotions
-  getAll(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(this.apiUrl);
-  }
-
-  // Get promotion by ID
-  getById(id: number): Observable<Promotion> {
-    return this.http.get<Promotion>(`${this.apiUrl}/${id}`);
-  }
-
-  // Get promotions by article code
-  getByArticleCode(codeArticle: string): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(
-      `${this.apiUrl}/by-article/${codeArticle}`
+  // Get all active promotions
+  getActivePromotions(): Observable<Promotion[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/promotion`).pipe(
+      map(promotions => {
+        const mappedPromotions = promotions.map((promo: any) => this.mapDotNetPromotionToAngular(promo));
+        this.promotionsSubject.next(mappedPromotions);
+        return mappedPromotions;
+      }),
+      catchError(error => {
+        console.error('Error fetching promotions:', error);
+        return of([]);
+      })
     );
   }
 
-  // Get active promotions
-  getActivePromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.apiUrl}/active`);
+  // Get only active promotions (not expired)
+  getOnlyActivePromotions(): Observable<Promotion[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/promotion/active`).pipe(
+      map(promotions => {
+        const mappedPromotions = promotions.map((promo: any) => this.mapDotNetPromotionToAngular(promo));
+        return mappedPromotions;
+      }),
+      catchError(error => {
+        console.error('Error fetching active promotions:', error);
+        return of([]);
+      })
+    );
   }
 
   // Get expired promotions
   getExpiredPromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.apiUrl}/expired`);
-  }
-
-  // Get promotions by reduction range
-  getByReductionRange(
-    minReduction: number,
-    maxReduction: number
-  ): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(
-      `${this.apiUrl}/by-reduction-range?minReduction=${minReduction}&maxReduction=${maxReduction}`
+    return this.http.get<any[]>(`${this.apiUrl}/promotion/expired`).pipe(
+      map(promotions => {
+        const mappedPromotions = promotions.map((promo: any) => this.mapDotNetPromotionToAngular(promo));
+        return mappedPromotions;
+      }),
+      catchError(error => {
+        console.error('Error fetching expired promotions:', error);
+        return of([]);
+      })
     );
   }
 
-  // Get upcoming promotions
-  getUpcomingPromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.apiUrl}/upcoming`);
+  // Get promotion statistics
+  getPromotionStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/promotion/stats`).pipe(
+      catchError(error => {
+        console.error('Error fetching promotion stats:', error);
+        return of({
+          TotalPromotions: 0,
+          ActivePromotions: 0,
+          ExpiredPromotions: 0,
+          AverageReduction: 0,
+          MaxReduction: 0,
+          MinReduction: 0,
+          TotalSavings: 0
+        });
+      })
+    );
   }
 
-  // Create new promotion
-  create(promotion: Promotion): Observable<Promotion> {
-    return this.http.post<Promotion>(this.apiUrl, promotion);
+  // Get all categories
+  getCategories(): Observable<Category[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/categorie`).pipe(
+      map(categories => {
+        return categories.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name
+        }));
+      }),
+      catchError(error => {
+        console.error('Error fetching categories:', error);
+        return of([]);
+      })
+    );
   }
 
-  // Update promotion
-  update(id: number, promotion: Promotion): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}`, promotion);
+  // Create a new promotion
+  createPromotion(promotion: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/promotion`, promotion, this.httpOptions).pipe(
+      catchError(error => {
+        console.error('Error creating promotion:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  // Delete promotion
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
-  // Approve promotion
-  approve(id: number, approvedBy?: string): Observable<any> {
-    const body = approvedBy ? { approvedBy } : {};
-    return this.http.post<any>(`${this.apiUrl}/${id}/approve`, body);
+  // Update a promotion
+  updatePromotion(id: number, promotion: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/promotion/${id}`, promotion, this.httpOptions).pipe(
+      catchError(error => {
+        console.error('Error updating promotion:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  // Reject promotion
-  reject(id: number, approvedBy?: string): Observable<any> {
-    const body = approvedBy ? { approvedBy } : {};
-    return this.http.post<any>(`${this.apiUrl}/${id}/reject`, body);
+  // Delete a promotion
+  deletePromotion(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/promotion/${id}`).pipe(
+      catchError(error => {
+        console.error('Error deleting promotion:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Delete all promotions
+  deleteAllPromotions(): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/promotion/clear-all`).pipe(
+      catchError(error => {
+        console.error('Error deleting all promotions:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Map .NET promotion model to Angular model
+  private mapDotNetPromotionToAngular(dotNetPromo: any): Promotion {
+    return {
+      id: dotNetPromo.id,
+      code_article: dotNetPromo.codeArticle,
+      product_name: dotNetPromo.article?.libelle || 'Product Name Not Available',
+      category_name: dotNetPromo.article?.categorie?.nom || 'Category Not Available',
+      discount_percentage: `${dotNetPromo.tauxReduction}%`,
+      price_before: dotNetPromo.prix_Vente_TND_Avant?.toString() || '0',
+      price_after: dotNetPromo.prix_Vente_TND_Apres?.toString() || '0',
+      end_date: dotNetPromo.dateFin,
+      created_at: dotNetPromo.dateCreation,
+      status: this.getPromotionStatus(dotNetPromo.dateFin),
+      expected_volume_impact: dotNetPromo.expectedVolumeImpact,
+      expected_revenue_impact: dotNetPromo.expectedRevenueImpact
+    };
+  }
+
+  // Analyze category for promotion opportunities (placeholder for now)
+  analyzeCategory(categoryId: number): Observable<PromotionAnalysis[]> {
+    // For now, return empty array since the backend doesn't have this specific endpoint
+    // This could be implemented by calling multiple endpoints and combining data
+    return of([]);
+  }
+
+  // Generate promotions using AI (calls the AI optimal promotions endpoint)
+  generatePromotions(categoryId?: number): Observable<PromotionGeneration> {
+    return this.http.get<any>(`${this.apiUrl}/promotion/ai-optimal`).pipe(
+      map(response => {
+        // Transform the response to match the expected format
+        const generated: PromotionGeneration = {
+          category_id: categoryId || 0,
+          promotions_generated: response.length || 0,
+          promotions_saved: response.length || 0,
+          promotions: response.map((item: any) => ({
+            product_id: item.articleId || 0,
+            discount_percentage: `${item.recommendedDiscount || 0}%`,
+            new_price: item.newPrice?.toString() || '0',
+            projected_sales_increase: item.projectedSalesIncrease?.toString() || '0',
+            projected_revenue_increase: item.projectedRevenueIncrease?.toString() || '0',
+            start_date: new Date().toISOString(),
+            end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+          }))
+        };
+        // Refresh promotions list after generation
+        this.getActivePromotions().subscribe();
+        return generated;
+      }),
+      catchError(error => {
+        console.error('Error generating promotions:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Get AI prediction for a specific article
+  predictPromotion(codeArticle: string, targetDate?: Date): Observable<any> {
+    const request = {
+      codeArticle: codeArticle,
+      targetDate: targetDate
+    };
+    return this.http.post<any>(`${this.apiUrl}/promotion/ai-predict`, request, this.httpOptions).pipe(
+      catchError(error => {
+        console.error('Error predicting promotion:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Get pending promotions (for approval workflow)
+  getPendingPromotions(): Observable<Promotion[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/promotion/pending`).pipe(
+      map(promotions => {
+        return promotions.map((promo: any) => this.mapDotNetPromotionToAngular(promo));
+      }),
+      catchError(error => {
+        console.error('Error fetching pending promotions:', error);
+        return of([]);
+      })
+    );
   }
 
   // Get approved promotions
   getApprovedPromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.apiUrl}/approved`);
+    return this.http.get<any[]>(`${this.apiUrl}/promotion/approved`).pipe(
+      map(promotions => {
+        return promotions.map((promo: any) => this.mapDotNetPromotionToAngular(promo));
+      }),
+      catchError(error => {
+        console.error('Error fetching approved promotions:', error);
+        return of([]);
+      })
+    );
   }
 
-  // Get pending promotions
-  getPendingPromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.apiUrl}/pending`);
+  // Approve a promotion
+  approvePromotion(id: number, validateurId?: number): Observable<any> {
+    const request = validateurId ? { validateurId } : {};
+    return this.http.post<any>(`${this.apiUrl}/promotion/${id}/approve`, request, this.httpOptions).pipe(
+      catchError(error => {
+        console.error('Error approving promotion:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  // Generate AI promotion using Flask API (deprecated - use predictPromotion instead)
-  generateAIPromotion(
-    articleCode: string,
-    targetDate: string,
-    autoSave: boolean = true
-  ): Observable<any> {
-    // Redirect to predictPromotion for consistent data source
-    return this.predictPromotion(articleCode, targetDate);
+  // Get database structure (for debugging)
+  getDatabaseStructure(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/database-structure`).pipe(
+      catchError(error => {
+        console.error('Error fetching database structure:', error);
+        return of({});
+      })
+    );
   }
 
-  // Predict promotion without saving (using Flask API) - Primary method for AI predictions
-  predictPromotion(articleCode: string, targetDate: string): Observable<any> {
-    const payload = {
-      article_code: articleCode,
-      target_date: targetDate,
+  // Debug category data
+  debugCategory(categoryId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/debug-category/${categoryId}`).pipe(
+      catchError(error => {
+        console.error('Error debugging category:', error);
+        return of({});
+      })
+    );
+  }
+
+  // Test sales data for a product
+  testSalesData(productId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/test-sales-data/${productId}`).pipe(
+      catchError(error => {
+        console.error('Error testing sales data:', error);
+        return of({});
+      })
+    );
+  }
+
+  // Force generate promotions for testing
+  forcePromotion(categoryId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/force-promotion/${categoryId}`).pipe(
+      catchError(error => {
+        console.error('Error forcing promotion:', error);
+        return of({});
+      })
+    );
+  }
+
+  // Calculate promotion statistics
+  calculatePromotionStats(promotions: Promotion[]): PromotionStats {
+    const now = new Date();
+    const activePromotions = promotions.filter(p => new Date(p.end_date) > now);
+    const expiredPromotions = promotions.filter(p => new Date(p.end_date) <= now);
+    
+    const totalDiscountValue = promotions.reduce((sum, promo) => {
+      const discountPercent = parseFloat(promo.discount_percentage.replace('%', ''));
+      const priceBefore = parseFloat(promo.price_before);
+      return sum + (priceBefore * discountPercent / 100);
+    }, 0);
+
+    const projectedRevenueIncrease = promotions.reduce((sum, promo) => {
+      return sum + (promo.expected_revenue_impact || 0);
+    }, 0);
+
+    return {
+      total_promotions: promotions.length,
+      active_promotions: activePromotions.length,
+      expired_promotions: expiredPromotions.length,
+      total_discount_value: totalDiscountValue,
+      projected_revenue_increase: projectedRevenueIncrease
     };
-    return this.http.post<any>('http://localhost:5000/api/predict', payload);
   }
 
-  // Save AI-generated promotion after prediction
-  saveAIPromotion(promotionData: any): Observable<Promotion> {
-    return this.http.post<Promotion>(this.apiUrl, promotionData);
+  // Helper method to determine promotion status
+  private getPromotionStatus(endDate: string): 'active' | 'expired' | 'pending' {
+    const now = new Date();
+    const end = new Date(endDate);
+    
+    if (end > now) {
+      return 'active';
+    } else {
+      return 'expired';
+    }
+  }
+
+  // Format currency
+  formatCurrency(amount: number | string): string {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('fr-TN', {
+      style: 'currency',
+      currency: 'TND',
+      minimumFractionDigits: 2
+    }).format(num);
+  }
+
+  // Format percentage
+  formatPercentage(percentage: string): string {
+    return percentage.endsWith('%') ? percentage : `${percentage}%`;
+  }
+
+  // Get promotion card color based on discount
+  getPromotionCardColor(discount: string): string {
+    const discountNum = parseFloat(discount.replace('%', ''));
+    
+    if (discountNum >= 25) {
+      return 'bg-gradient-to-br from-red-500 to-red-600'; // High discount
+    } else if (discountNum >= 15) {
+      return 'bg-gradient-to-br from-orange-500 to-orange-600'; // Medium discount
+    } else if (discountNum >= 10) {
+      return 'bg-gradient-to-br from-yellow-500 to-yellow-600'; // Low-medium discount
+    } else {
+      return 'bg-gradient-to-br from-green-500 to-green-600'; // Low discount
+    }
   }
 }

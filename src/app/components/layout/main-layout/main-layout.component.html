@@ -1,50 +1,21 @@
 <!-- Main Layout Container -->
 <div class="layout-root min-h-screen bg-gray-50 dark:bg-gray-900">
-  <div class="layout-container">
-    <!-- Mobile Sidebar Overlay -->
-    <div
-      *ngIf="isMobile && sidebarOpen"
-      class="mobile-overlay"
-      (click)="closeMobileSidebar()"
-    ></div>
-
+  <div class="layout-container flex">
     <!-- Sidebar -->
-    <div
-      class="sidebar-container transition-all duration-300"
-      [class.-translate-x-full]="isMobile && !sidebarOpen"
-      [class.translate-x-0]="!isMobile || sidebarOpen"
-      [class.w-64]="!sidebarCollapsed"
-      [class.w-16]="sidebarCollapsed"
-    >
+    <div class="sidebar-container flex-shrink-0">
       <app-sidebar></app-sidebar>
     </div>
 
     <!-- Main Content Area -->
-    <div class="main-content">
+    <div class="main-content flex-1 flex flex-col min-w-0">
       <!-- Top Navigation -->
-      <header
-        class="header-container bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700"
-      >
-        <div class="flex items-center h-[71.8px]">
-          <!-- Mobile Menu Button -->
-          <button
-            *ngIf="isMobile"
-            (click)="toggleMobileSidebar()"
-            class="p-4 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden flex-shrink-0"
-          >
-            <i class="fas fa-bars text-xl"></i>
-          </button>
-
-          <!-- Navbar Component -->
-          <div class="flex-1 min-w-0 ">
-            <app-navbar></app-navbar>
-          </div>
-        </div>
+      <header class="header-container flex-shrink-0">
+        <app-navbar></app-navbar>
       </header>
 
       <!-- Page Content -->
-      <main class="content-area bg-gray-50 dark:bg-gray-900 focus:outline-none">
-        <div class="container mx-auto px-6 py-8">
+      <main class="content-area flex-1 bg-gray-50 dark:bg-gray-900 focus:outline-none">
+        <div class="container ">
           <router-outlet></router-outlet>
         </div>
       </main>

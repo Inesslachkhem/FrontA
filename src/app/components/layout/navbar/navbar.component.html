@@ -1,19 +1,38 @@
 <!-- Top Navbar -->
-<nav class="w-full">
-  <div class="flex items-center justify-between px-6 py-3">
-    <!-- Page Title -->
-    <div class="flex items-center space-x-4">
+<nav class="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+  <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+    <!-- Left Side - Mobile Menu Toggle & Page Title -->
+    <div class="flex items-center space-x-3">
+      <!-- Mobile Menu Toggle Button -->
+      <button
+        (click)="toggleMobileSidebar()"
+        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        title="Toggle sidebar"
+      >
+        <i class="fas fa-bars text-lg"></i>
+      </button>
+      
+      <!-- Desktop Sidebar Toggle Button -->
+      <button
+        (click)="toggleDesktopSidebar()"
+        class="hidden md:block p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        title="Toggle sidebar"
+      >
+        <i class="fas fa-bars text-lg"></i>
+      </button>
+
+      <!-- Page Title -->
       <h1
-        class="text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate"
+        class="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate"
       >
         {{ pageTitle }}
       </h1>
     </div>
 
     <!-- Right Side - Actions -->
-    <div class="flex items-center space-x-2 lg:space-x-4">
-      <!-- Search Bar (Optional) -->
-      <div class="hidden md:block">
+    <div class="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+      <!-- Search Bar (Hidden on small screens) -->
+      <div class="hidden lg:block">
         <div class="relative">
           <div
             class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
@@ -23,10 +42,21 @@
           <input
             type="text"
             placeholder="Search..."
-            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-48 lg:w-64 pl-10 p-2.5"
+            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-48 xl:w-64 pl-10 p-2.5"
           />
         </div>
       </div>
+
+      <!-- Mobile Search Button -->
+      <button
+        (click)="toggleMobileSearch()"
+        class="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        [class.bg-gray-100]="isMobileSearchOpen"
+        [class.dark:bg-gray-700]="isMobileSearchOpen"
+        title="Search"
+      >
+        <i class="fas fa-search text-lg"></i>
+      </button>
 
       <!-- Theme Toggle -->
       <button
@@ -34,20 +64,23 @@
         class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 flex-shrink-0"
         title="Toggle theme"
       >
-        <i class="fas fa-sun" *ngIf="isDarkMode"></i>
-        <i class="fas fa-moon" *ngIf="!isDarkMode"></i>
+        <i class="fas fa-sun text-lg" *ngIf="isDarkMode"></i>
+        <i class="fas fa-moon text-lg" *ngIf="!isDarkMode"></i>
       </button>
+
+      <!-- Notifications -->
       <div class="relative">
         <button
           (click)="toggleNotifications()"
           class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+          title="Notifications"
         >
           <i class="fas fa-bell text-lg"></i>
           <span
             *ngIf="unreadCount > 0"
             class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
           >
-            {{ unreadCount }}
+            {{ unreadCount > 9 ? '9+' : unreadCount }}
           </span>
         </button>
 
@@ -181,6 +214,30 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Mobile Search Bar (Collapsible) -->
+  <div 
+    *ngIf="isMobileSearchOpen" 
+    class="lg:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-3 animate-slide-down"
+  >
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <i class="fas fa-search text-gray-400"></i>
+      </div>
+      <input
+        type="text"
+        placeholder="Search..."
+        class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+        (keydown.escape)="closeMobileSearch()"
+      />
+      <button
+        (click)="closeMobileSearch()"
+        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        <i class="fas fa-times"></i>
+      </button>
     </div>
   </div>
 </nav>

@@ -1,0 +1,463 @@
+<!-- Chat Container -->
+<div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Sidebar - Conversations List -->
+  <div 
+    class="flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out"
+    [class.w-80]="isSidebarOpen"
+    [class.w-16]="!isSidebarOpen"
+  >
+    <!-- Sidebar Header -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+      <div *ngIf="isSidebarOpen" class="flex items-center space-x-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <i class="fas fa-comments text-white text-sm"></i>
+        </div>
+        <span class="text-lg font-semibold text-gray-800 dark:text-white">Chat</span>
+        <span 
+          *ngIf="getTotalUnreadCount() > 0"
+          class="bg-red-500 text-white text-xs px-2 py-1 rounded-full"
+        >
+          {{ getTotalUnreadCount() }}
+        </span>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <button
+          (click)="toggleUserList()"
+          *ngIf="isSidebarOpen"
+          class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          title="Start new conversation"
+        >
+          <i class="fas fa-plus"></i>
+        </button>
+        
+        <button
+          (click)="toggleSidebar()"
+          class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div 
+      *ngIf="isSidebarOpen"
+      class="px-4 py-2 border-b border-gray-200 dark:border-gray-700"
+    >
+      <div class="flex items-center space-x-2">
+        <div 
+          class="w-2 h-2 rounded-full"
+          [class.bg-green-500]="isConnected"
+          [class.bg-red-500]="!isConnected"
+        ></div>
+        <span class="text-xs text-gray-600 dark:text-gray-400">
+          {{ isConnected ? 'Online' : 'Connecting...' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Conversations List -->
+    <div class="flex-1 overflow-y-auto">
+      <div *ngIf="isLoading && conversations.length === 0" class="p-4 text-center">
+        <div class="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading conversations...</p>
+      </div>
+
+      <div *ngIf="!isLoading && conversations.length === 0 && isSidebarOpen" class="p-4 text-center">
+        <i class="fas fa-comments text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+        <p class="text-gray-600 dark:text-gray-400">No conversations yet</p>
+        <button
+          (click)="toggleUserList()"
+          class="mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm"
+        >
+          Start a conversation
+        </button>
+      </div>
+
+      <!-- Conversation Items -->
+      <div *ngFor="let conversation of conversations" class="relative">
+        <button
+          (click)="selectConversation(conversation)"
+          class="w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-l-4 border-transparent"
+          [class.bg-blue-50]="selectedConversation?.id === conversation.id"
+          [class.border-blue-500]="selectedConversation?.id === conversation.id"
+          [class.dark:bg-blue-900]="selectedConversation?.id === conversation.id"
+        >
+          <div *ngIf="isSidebarOpen" class="flex items-center space-x-3">
+            <!-- Avatar -->
+            <div 
+              class="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
+              [class.bg-blue-600]="!conversation.isGroup"
+              [class.bg-green-600]="conversation.isGroup"
+            >
+              {{ getConversationAvatar(conversation) }}
+            </div>
+
+            <!-- Conversation Info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h3 class="font-medium text-gray-900 dark:text-white truncate">
+                  {{ getConversationTitle(conversation) }}
+                </h3>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatConversationTime(conversation.lastMessage?.sentAt || conversation.updatedAt) }}
+                </span>
+              </div>
+              
+              <div class="flex items-center justify-between mt-1">
+                <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                  <span *ngIf="conversation.lastMessage?.senderName && conversation.isGroup" class="font-medium">
+                    {{ conversation.lastMessage?.senderName }}:
+                  </span>
+                  {{ conversation.lastMessage?.content || 'No messages yet' }}
+                </p>
+                
+                <span 
+                  *ngIf="conversation.unreadCount > 0"
+                  class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center"
+                >
+                  {{ conversation.unreadCount }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsed View -->
+          <div *ngIf="!isSidebarOpen" class="flex justify-center">
+            <div 
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+              [class.bg-blue-600]="!conversation.isGroup"
+              [class.bg-green-600]="conversation.isGroup"
+            >
+              {{ getConversationAvatar(conversation).substring(0, 1) }}
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Chat Area -->
+  <div class="flex-1 flex flex-col">
+    <!-- No Conversation Selected -->
+    <div *ngIf="!selectedConversation" class="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div class="text-center">
+        <i class="fas fa-comments text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h2 class="text-2xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+          Welcome to SmartPromo Chat
+        </h2>
+        <p class="text-gray-500 dark:text-gray-500">
+          Select a conversation to start chatting
+        </p>
+      </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div *ngIf="selectedConversation" class="flex-1 flex flex-col">
+      <!-- Chat Header -->
+      <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div 
+              class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
+              [class.bg-blue-600]="!selectedConversation.isGroup"
+              [class.bg-green-600]="selectedConversation.isGroup"
+            >
+              {{ getConversationAvatar(selectedConversation) }}
+            </div>
+            
+            <div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">
+                {{ getConversationTitle(selectedConversation) }}
+              </h3>
+              
+              <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <span *ngIf="selectedConversation.isGroup">
+                  {{ selectedConversation.participants.length }} members
+                </span>
+                
+                <span *ngIf="!selectedConversation.isGroup">
+                  <ng-container *ngFor="let participant of selectedConversation.participants">
+                    <span *ngIf="participant.id !== currentUser?.id">
+                      <i 
+                        class="w-2 h-2 rounded-full inline-block mr-1"
+                        [class.bg-green-500]="participant.isOnline"
+                        [class.bg-gray-400]="!participant.isOnline"
+                      ></i>
+                      {{ participant.isOnline ? 'Online' : 'Offline' }}
+                    </span>
+                  </ng-container>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <!-- Chat Actions (future: video call, voice call, etc.) -->
+            <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages Area -->
+      <div 
+        #messagesContainer
+        class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
+      >
+        <!-- Load More Messages Button -->
+        <div *ngIf="hasMoreMessagesPublic" class="text-center">
+          <button
+            (click)="loadMoreMessages()"
+            [disabled]="isLoading"
+            class="text-blue-600 dark:text-blue-400 hover:underline text-sm disabled:opacity-50"
+          >
+            <i *ngIf="isLoading" class="fas fa-spinner fa-spin mr-2"></i>
+            Load older messages
+          </button>
+        </div>
+
+        <!-- Messages -->
+        <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.isOwnMessage">
+          <div 
+            class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg"
+            [class.bg-blue-600]="message.isOwnMessage"
+            [class.text-white]="message.isOwnMessage"
+            [class.bg-white]="!message.isOwnMessage"
+            [class.text-gray-900]="!message.isOwnMessage"
+            [class.dark:bg-gray-800]="!message.isOwnMessage"
+            [class.dark:text-white]="!message.isOwnMessage"
+          >
+            <!-- Sender Name (for group chats and received messages) -->
+            <div 
+              *ngIf="!message.isOwnMessage && selectedConversation?.isGroup"
+              class="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400"
+            >
+              {{ message.senderName }}
+            </div>
+
+            <!-- Message Content -->
+            <div class="break-words">{{ message.content }}</div>
+
+            <!-- Message Time -->
+            <div 
+              class="text-xs mt-1 opacity-75"
+              [class.text-right]="message.isOwnMessage"
+            >
+              {{ formatMessageTime(message.sentAt) }}
+            </div>
+
+            <!-- Read Indicators (for sent messages) -->
+            <div 
+              *ngIf="message.isOwnMessage && message.readByUserIds.length > 0"
+              class="text-xs mt-1 opacity-75 text-right"
+            >
+              <i class="fas fa-check-double text-blue-300"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div *ngIf="typingUsers.size > 0" class="flex">
+          <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg max-w-xs">
+            <div class="flex items-center space-x-2">
+              <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                {{ getTypingUsersText() }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Input -->
+      <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex items-end space-x-3">
+          <!-- Message Input -->
+          <div class="flex-1">
+            <textarea
+              #messageInput
+              [(ngModel)]="messageText"
+              (input)="onMessageInput()"
+              (keydown)="onKeyDown($event)"
+              placeholder="Type a message..."
+              rows="1"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              style="min-height: 40px; max-height: 120px;"
+            ></textarea>
+          </div>
+
+          <!-- Send Button -->
+          <button
+            (click)="sendMessage()"
+            [disabled]="!messageText.trim()"
+            class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User List Modal -->
+  <div 
+    *ngIf="showUserList"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  >
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Start Conversation</h3>
+        <button
+          (click)="toggleUserList()"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Search Users -->
+      <div class="mb-4">
+        <input
+          [(ngModel)]="searchUserText"
+          type="text"
+          placeholder="Search users..."
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+        >
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex space-x-2 mb-4">
+        <button
+          (click)="openCreateGroupModal()"
+          class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <i class="fas fa-users mr-2"></i>Create Group
+        </button>
+      </div>
+
+      <!-- Users List -->
+      <div class="max-h-60 overflow-y-auto">
+        <div 
+          *ngFor="let user of getFilteredUsers()"
+          class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+          (click)="createDirectConversation(user)"
+        >
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+              {{ getUserAvatar(user) }}
+            </div>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">
+                {{ user.prenom }} {{ user.nom }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">{{ user.email }}</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center">
+            <div 
+              class="w-2 h-2 rounded-full mr-2"
+              [class.bg-green-500]="user.isOnline"
+              [class.bg-gray-400]="!user.isOnline"
+            ></div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ user.isOnline ? 'Online' : 'Offline' }}
+            </span>
+          </div>
+        </div>
+
+        <div *ngIf="getFilteredUsers().length === 0" class="text-center py-4 text-gray-600 dark:text-gray-400">
+          No users found
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Group Modal -->
+  <div 
+    *ngIf="showCreateGroupModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  >
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Create Group</h3>
+        <button
+          (click)="closeCreateGroupModal()"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Group Name -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Group Name
+        </label>
+        <input
+          [(ngModel)]="newConversationTitle"
+          type="text"
+          placeholder="Enter group name..."
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+        >
+      </div>
+
+      <!-- Users Selection -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Select Members ({{ selectedUserIds.length }} selected)
+        </label>
+        
+        <div class="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg">
+          <div 
+            *ngFor="let user of availableUsers"
+            class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <input
+              type="checkbox"
+              [checked]="isUserSelected(user.id)"
+              (change)="toggleUserSelection(user.id)"
+              class="mr-3"
+            >
+            
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                {{ getUserAvatar(user) }}
+              </div>
+              <div>
+                <div class="font-medium text-gray-900 dark:text-white">
+                  {{ user.prenom }} {{ user.nom }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ user.email }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex space-x-3">
+        <button
+          (click)="closeCreateGroupModal()"
+          class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          (click)="createGroupConversation()"
+          [disabled]="!newConversationTitle.trim() || selectedUserIds.length === 0"
+          class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Create Group
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

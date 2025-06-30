@@ -20,6 +20,8 @@ export class NavbarComponent implements OnInit {
   isProfileOpen = false;
   currentUser: User | null = null;
   isSidebarCollapsed = false;
+  isMobileSearchOpen = false;
+  isMobile = false;
 
   notifications = [
     {
@@ -61,6 +63,11 @@ export class NavbarComponent implements OnInit {
       this.isSidebarCollapsed = collapsed;
     });
 
+    // Subscribe to mobile state
+    this.layoutService.isMobile$.subscribe((mobile) => {
+      this.isMobile = mobile;
+    });
+
     // Update page title based on current route
     this.router.events
       .pipe(
@@ -70,8 +77,8 @@ export class NavbarComponent implements OnInit {
           if (url.includes('dashboard')) return 'Dashboard';
           if (url.includes('articles')) return 'Articles';
           if (url.includes('categories')) return 'Categories';
+          if (url.includes('promotions')) return 'Promotions';
           if (url.includes('ventes')) return 'Ventes';
-          if (url.includes('promotion')) return 'Promotion';
           if (url.includes('stock')) return 'Stock';
           if (url.includes('department')) return 'Depots';
           if (url.includes('etablissement')) return 'Etablissement';
@@ -157,5 +164,26 @@ export class NavbarComponent implements OnInit {
 
   toggleSidebar(): void {
     this.layoutService.toggleSidebar();
+  }
+
+  toggleMobileSidebar(): void {
+    this.layoutService.toggleSidebar();
+  }
+
+  toggleDesktopSidebar(): void {
+    this.layoutService.toggleSidebar();
+  }
+
+  toggleMobileSearch(): void {
+    this.isMobileSearchOpen = !this.isMobileSearchOpen;
+    // Close other dropdowns when opening search
+    if (this.isMobileSearchOpen) {
+      this.isNotificationOpen = false;
+      this.isProfileOpen = false;
+    }
+  }
+
+  closeMobileSearch(): void {
+    this.isMobileSearchOpen = false;
   }
 }

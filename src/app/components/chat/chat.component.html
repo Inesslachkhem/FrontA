@@ -1,0 +1,221 @@
+<div class="chat-container">
+  <!-- Sidebar with conversations -->
+  <div class="chat-sidebar">
+    <div class="sidebar-header">
+      <h3 class="sidebar-title">Messages</h3>
+      <button 
+        class="new-chat-btn"
+        (click)="showUserList = !showUserList"
+        [class.active]="showUserList">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- Connection status -->
+    <div class="connection-status" [class.connected]="isConnected">
+      <i class="fas fa-circle"></i>
+      <span>{{ isConnected ? 'Connected' : 'Disconnected' }}</span>
+    </div>
+
+    <!-- User list for new conversations -->
+    <div class="user-list" *ngIf="showUserList">
+      <div class="user-list-header">
+        <h4>Start a conversation</h4>
+        <button class="close-btn" (click)="showUserList = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="user-list-content">
+        <div 
+          class="user-item"
+          *ngFor="let user of availableUsers"
+          (click)="startDirectConversation(user)">
+          <img [src]="getUserAvatar(user)" [alt]="user.prenom" class="user-avatar">
+          <div class="user-info">
+            <div class="user-name">{{ user.prenom }} {{ user.nom }}</div>
+            <div class="user-email">{{ user.email }}</div>
+          </div>
+          <div class="user-status" [class.online]="user.isOnline">
+            <i class="fas fa-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversations list -->
+    <div class="conversations-list">
+      <div 
+        class="conversation-item"
+        *ngFor="let conversation of conversations"
+        [class.active]="selectedConversation?.id === conversation.id"
+        (click)="selectConversation(conversation)">
+        
+        <div class="conversation-avatar">
+          <img [src]="getConversationAvatar(conversation)" [alt]="getConversationTitle(conversation)">
+          <div 
+            class="online-indicator"
+            *ngIf="!conversation.isGroup && conversation.participants.length > 0"
+            [class.online]="conversation.participants.find(p => p.id !== currentUserId)?.isOnline">
+          </div>
+        </div>
+
+        <div class="conversation-content">
+          <div class="conversation-header">
+            <h4 class="conversation-title">{{ getConversationTitle(conversation) }}</h4>
+            <span class="conversation-time" *ngIf="conversation.lastMessage">
+              {{ formatTime(conversation.lastMessage.sentAt) }}
+            </span>
+          </div>
+          
+          <div class="conversation-preview">
+            <p class="last-message" *ngIf="conversation.lastMessage">
+              <span class="sender-name" *ngIf="conversation.isGroup">
+                {{ conversation.lastMessage.senderName }}:
+              </span>
+              {{ conversation.lastMessage.content }}
+            </p>
+            <p class="no-messages" *ngIf="!conversation.lastMessage">
+              No messages yet
+            </p>
+          </div>
+        </div>
+
+        <div class="conversation-meta">
+          <div 
+            class="unread-count"
+            *ngIf="conversation.unreadCount > 0">
+            {{ conversation.unreadCount }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main chat area -->
+  <div class="chat-main">
+    <div class="chat-placeholder" *ngIf="!selectedConversation">
+      <div class="placeholder-content">
+        <i class="fas fa-comments"></i>
+        <h3>Select a conversation</h3>
+        <p>Choose a conversation from the sidebar to start chatting</p>
+      </div>
+    </div>
+
+    <div class="chat-content" *ngIf="selectedConversation">
+      <!-- Chat header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <img 
+            [src]="getConversationAvatar(selectedConversation)" 
+            [alt]="getConversationTitle(selectedConversation)"
+            class="chat-avatar">
+          <div class="chat-title-area">
+            <h3 class="chat-title">{{ getConversationTitle(selectedConversation) }}</h3>
+            <div class="chat-status">
+              <span *ngIf="!selectedConversation.isGroup && selectedConversation.participants.length > 0">
+                {{ selectedConversation.participants.find(p => p.id !== currentUserId)?.isOnline ? 'Online' : 'Offline' }}
+              </span>
+              <span *ngIf="selectedConversation.isGroup">
+                {{ selectedConversation.participants.length }} participants
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="chat-actions">
+          <button class="action-btn">
+            <i class="fas fa-phone"></i>
+          </button>
+          <button class="action-btn">
+            <i class="fas fa-video"></i>
+          </button>
+          <button class="action-btn">
+            <i class="fas fa-info-circle"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages area -->
+      <div class="messages-area" #messagesContainer>
+        <div class="messages-loading" *ngIf="loading">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Loading messages...</span>
+        </div>
+
+        <div class="messages-list" *ngIf="!loading">
+          <ng-container *ngFor="let message of messages; let i = index">
+            <!-- Date divider -->
+            <div class="date-divider" *ngIf="shouldShowDateDivider(i)">
+              <span class="date-text">{{ formatDate(message.sentAt) }}</span>
+            </div>
+
+            <!-- Message -->
+            <div 
+              class="message"
+              [class.own-message]="message.isOwnMessage"
+              [class.other-message]="!message.isOwnMessage">
+              
+              <div class="message-avatar" *ngIf="!message.isOwnMessage">
+                <img [src]="getUserAvatar({ id: message.senderId, prenom: message.senderName.split(' ')[0], nom: message.senderName.split(' ')[1] || '', email: '' })" [alt]="message.senderName">
+              </div>
+
+              <div class="message-content">
+                <div class="message-sender" *ngIf="!message.isOwnMessage && selectedConversation?.isGroup">
+                  {{ message.senderName }}
+                </div>
+                
+                <div class="message-bubble">
+                  <div class="message-text">{{ message.content }}</div>
+                  <div class="message-meta">
+                    <span class="message-time">{{ formatTime(message.sentAt) }}</span>
+                    <div class="message-status" *ngIf="message.isOwnMessage">
+                      <i class="fas fa-check" *ngIf="message.readByUserIds.length === 0"></i>
+                      <i class="fas fa-check-double" *ngIf="message.readByUserIds.length > 0" [class.read]="message.readByUserIds.length > 0"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Typing indicators -->
+          <div class="typing-indicator" *ngIf="getTypingText(selectedConversation.id)">
+            <div class="typing-content">
+              <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="typing-text">{{ getTypingText(selectedConversation.id) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message input -->
+      <div class="message-input-area">
+        <div class="input-container">
+          <button class="attachment-btn">
+            <i class="fas fa-paperclip"></i>
+          </button>
+          
+          <input 
+            type="text"
+            class="message-input"
+            placeholder="Type a message..."
+            [(ngModel)]="currentMessage"
+            (keyup.enter)="sendMessage()"
+            (input)="onTyping()"
+            #messageInput>
+          
+          <button 
+            class="send-btn"
+            (click)="sendMessage()"
+            [disabled]="!currentMessage.trim()">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

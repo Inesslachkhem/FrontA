@@ -28,7 +28,6 @@ A modern, responsive, and professional admin dashboard built with Angular 18 and
   - Categories
   - All Articles
 - 🛒 **Ventes** (Sales)
-- 🎯 **Promotion**
 - 📦 **Stock**
 - 🏢 **Department**
 - 🏫 **Etablissement**
@@ -106,7 +105,6 @@ src/
 │   │   ├── articles/
 │   │   ├── categories/
 │   │   ├── ventes/
-│   │   ├── promotion/
 │   │   ├── stock/
 │   │   ├── department/
 │   │   └── etablissement/

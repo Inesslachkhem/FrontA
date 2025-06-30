@@ -1,5 +1,4 @@
 
-import { Promotion } from './promotion.model';
 import { Vente } from './vente.model';
 
 export interface Article {
@@ -26,7 +25,6 @@ export interface Article {
   prix_Achat_TND: number;
   idCategorie: string;
   categorie?: Categorie;
-  promotions?: Promotion[];
   stocks?: Stock[];
   ventes?: Vente[];
 }

@@ -367,7 +367,7 @@ import { CategorieService } from '../../services/categorie.service';
                     article-related data!
                   </p>
                   <p>
-                    All existing articles, stocks, promotions, and sales will be
+                    All existing articles, stocks, and sales will be
                     deleted.
                   </p>
                 </div>
@@ -577,7 +577,7 @@ export class ArticleListComponent implements OnInit {
 
     // Show warning confirmation
     const confirmed = confirm(
-      `⚠️ ARTICLE DATA REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing promotions\n✗ Delete ALL existing sales\n\nAnd replace with article data from: ${this.selectedFile.name}\n\nCategories will remain unchanged.\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
+      `⚠️ ARTICLE DATA REPLACEMENT WARNING!\n\nThis action will:\n✗ Delete ALL existing articles\n✗ Delete ALL existing stocks\n✗ Delete ALL existing sales\n\nAnd replace with article data from: ${this.selectedFile.name}\n\nCategories will remain unchanged.\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`
     );
 
     if (!confirmed) {
