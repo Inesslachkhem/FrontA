@@ -60,7 +60,7 @@ export interface PromotionAnalysis {
 }
 
 export interface PromotionGeneration {
-  category_id: number;
+  category_id: string; // Changed from number to string to match category IDs
   promotions_generated: number;
   promotions_saved: number;
   promotions: GeneratedPromotion[];
@@ -77,7 +77,7 @@ export interface GeneratedPromotion {
 }
 
 export interface Category {
-  id: number;
+  id: string; // Changed from number to string to match backend idCategorie
   name: string;
 }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { PromotionService } from '../../services/promotion.service';
+import { AIPromotionService, AIRecommendation, AIRecommendationResponse } from '../../services/ai-promotion.service';
 import { 
   Promotion, 
   PromotionStats, 
@@ -37,10 +38,19 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     projected_revenue_increase: 0
   };
 
+  // AI recommendations
+  aiRecommendations: Map<number, AIRecommendationResponse> = new Map();
+  showAIRecommendations = true;
+  aiLoading = false;
+  aiError: string | null = null;
+
   // UI state
   loading = false;
   showGenerateModal = false;
   showAnalysisModal = false;
+  showDetailsModal = false;
+  showAIInsightsModal = false;
+  selectedPromotion: Promotion | null = null;
   
   // Filters
   searchTerm = '';
@@ -50,7 +60,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   sortOrder: 'asc' | 'desc' = 'desc';
 
   // Generation
-  selectedCategoryId: number | null = null;
+  selectedCategoryId: string | null = null;
   generating = false;
   
   // Analysis
@@ -71,16 +81,128 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     { value: 'product_name', label: 'Product Name' }
   ];
 
-  constructor(private promotionService: PromotionService) {}
+  constructor(
+    private promotionService: PromotionService, 
+    private aiPromotionService: AIPromotionService
+  ) {}
 
   ngOnInit(): void {
     this.loadPromotions();
     this.loadCategories();
+    this.checkAIService();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // AI Methods
+  checkAIService(): void {
+    this.aiPromotionService.checkHealth()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('AI service is available');
+        },
+        error: (error) => {
+          console.warn('AI service unavailable:', error);
+          this.showAIRecommendations = false;
+        }
+      });
+  }
+
+  async loadAIRecommendations(): Promise<void> {
+    if (!this.showAIRecommendations || this.promotions.length === 0) {
+      return;
+    }
+
+    this.aiLoading = true;
+    this.aiError = null;
+
+    try {
+      // Load AI recommendations for each promotion's product
+      for (const promotion of this.promotions.slice(0, 10)) { // Limit to first 10 for demo
+        try {
+          const productData = this.prepareProductDataForAI(promotion);
+          const aiRecommendation = await this.aiPromotionService.getPromotionRecommendation(productData).toPromise();
+          if (aiRecommendation) {
+            this.aiRecommendations.set(promotion.id, aiRecommendation);
+          }
+        } catch (error) {
+          console.error('Failed to get AI recommendation for promotion', promotion.id, error);
+        }
+      }
+    } catch (error) {
+      this.aiError = 'Failed to load AI recommendations';
+      console.error('AI recommendations error:', error);
+    } finally {
+      this.aiLoading = false;
+    }
+  }
+
+  prepareProductDataForAI(promotion: Promotion): any {
+    return {
+      product_id: promotion.id,
+      product_name: promotion.product_name,
+      current_price: promotion.original_price || 100, // Default if not available
+      current_stock: 50, // Default - would come from actual product data
+      total_sales_90d: 25, // Default - would come from sales analytics
+      total_revenue_90d: (promotion.original_price || 100) * 25,
+      total_purchased_90d: 75,
+      sales_last_30d: 8,
+      sales_previous_30d: 10,
+      days_since_last_promo: this.calculateDaysSinceLastPromo(promotion),
+      last_promo_discount: promotion.discount_rate,
+      promo_count_6months: 1,
+      category_id: promotion.category_id || 1
+    };
+  }
+
+  calculateDaysSinceLastPromo(promotion: Promotion): number {
+    if (promotion.end_date) {
+      const endDate = new Date(promotion.end_date);
+      const now = new Date();
+      return Math.floor((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    return 365; // Default if no end date
+  }
+
+  getAIRecommendation(promotionId: number): AIRecommendationResponse | null {
+    return this.aiRecommendations.get(promotionId) || null;
+  }
+
+  getConfidenceClass(confidence: number): string {
+    return this.aiPromotionService.getConfidenceClass(confidence);
+  }
+
+  getRiskClass(riskLevel: string): string {
+    return this.aiPromotionService.getRiskClass(riskLevel);
+  }
+
+  formatPercent(value: number): string {
+    return this.aiPromotionService.formatPercent(value);
+  }
+
+  formatCurrency(value: number): string {
+    return this.aiPromotionService.formatCurrency(value);
+  }
+
+  showAIInsights(): void {
+    this.showAIInsightsModal = true;
+  }
+
+  closeAIInsights(): void {
+    this.showAIInsightsModal = false;
+  }
+
+  toggleAIRecommendations(): void {
+    this.showAIRecommendations = !this.showAIRecommendations;
+    if (this.showAIRecommendations) {
+      this.loadAIRecommendations();
+    } else {
+      this.aiRecommendations.clear();
+    }
   }
 
   // Data loading methods
@@ -227,7 +349,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   }
 
   // Category analysis
-  analyzeCategory(categoryId: number): void {
+  analyzeCategory(categoryId: string): void {
     this.analyzingCategory = true;
     this.promotionService.analyzeCategory(categoryId)
       .pipe(takeUntil(this.destroy$))
@@ -249,6 +371,45 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     this.analysisData = [];
   }
 
+  // Details modal methods
+  openDetailsModal(promotion: Promotion): void {
+    this.selectedPromotion = promotion;
+    this.showDetailsModal = true;
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.selectedPromotion = null;
+  }
+
+  // AI recommendations
+  loadAIRecommendations(): void {
+    this.aiLoading = true;
+    this.aiPromotionService.getAIRecommendations()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (recommendations) => {
+          this.aiRecommendations = recommendations;
+          this.aiLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading AI recommendations:', error);
+          this.aiLoading = false;
+        }
+      });
+  }
+
+  toggleAIInsights(): void {
+    this.showAIInsightsModal = !this.showAIInsightsModal;
+    if (this.showAIInsightsModal) {
+      this.loadAIRecommendations();
+    }
+  }
+
+  closeAIInsightsModal(): void {
+    this.showAIInsightsModal = false;
+  }
+
   // Utility methods
   getPromotionCardClass(promotion: Promotion): string {
     return this.promotionService.getPromotionCardColor(promotion.discount_percentage);
@@ -260,6 +421,12 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   formatPercentage(percentage: string): string {
     return this.promotionService.formatPercentage(percentage);
+  }
+
+  calculateSavings(priceBefore: string | number, priceAfter: string | number): number {
+    const before = typeof priceBefore === 'string' ? parseFloat(priceBefore) : priceBefore;
+    const after = typeof priceAfter === 'string' ? parseFloat(priceAfter) : priceAfter;
+    return before - after;
   }
 
   isPromotionExpired(endDate: string): boolean {

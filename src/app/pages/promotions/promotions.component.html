@@ -222,7 +222,9 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-2">
-            <button class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium">
+            <button 
+              (click)="openDetailsModal(promotion)"
+              class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium">
               <i class="fas fa-eye mr-2"></i>
               View Details
             </button>
@@ -358,6 +360,150 @@
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Promotion Details Modal -->
+<div *ngIf="showDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <!-- Modal Header -->
+    <div [class]="getPromotionCardClass(selectedPromotion!) + ' p-6 text-white relative overflow-hidden'">
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute -top-4 -right-4 w-24 h-24 rounded-full border-4 border-white"></div>
+        <div class="absolute -bottom-4 -left-4 w-32 h-32 rounded-full border-4 border-white"></div>
+      </div>
+      
+      <div class="relative z-10 flex items-center justify-between">
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold mb-2">Promotion Details</h2>
+          <p class="text-white/80">Complete information for this promotion</p>
+        </div>
+        <button (click)="closeDetailsModal()" class="text-white hover:text-gray-200 ml-4">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6" *ngIf="selectedPromotion">
+      <!-- Basic Information -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">Basic Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">Product Name</label>
+            <p class="text-gray-900 font-medium">{{ selectedPromotion.product_name || 'Not Available' }}</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">Category</label>
+            <p class="text-gray-900 font-medium">{{ selectedPromotion.category_name || 'Not Available' }}</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">Article Code</label>
+            <p class="text-gray-900 font-mono">{{ selectedPromotion.code_article }}</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">Status</label>
+            <span [class]="getStatusBadgeClass(selectedPromotion.status!) + ' px-3 py-1 rounded-full text-xs font-semibold border'">
+              {{ selectedPromotion.status | titlecase }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Information -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">Pricing Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-red-50 p-4 rounded-xl border border-red-200">
+            <label class="text-sm font-medium text-red-600">Original Price</label>
+            <p class="text-2xl font-bold text-red-700 line-through">{{ formatCurrency(selectedPromotion.price_before) }}</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded-xl border border-green-200">
+            <label class="text-sm font-medium text-green-600">New Price</label>
+            <p class="text-2xl font-bold text-green-700">{{ formatCurrency(selectedPromotion.price_after) }}</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+            <label class="text-sm font-medium text-blue-600">Discount</label>
+            <p class="text-2xl font-bold text-blue-700">{{ selectedPromotion.discount_percentage }}</p>
+          </div>
+        </div>
+        <div class="mt-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+          <label class="text-sm font-medium text-yellow-600">You Save</label>
+          <p class="text-xl font-bold text-yellow-700">
+            {{ formatCurrency(calculateSavings(selectedPromotion.price_before, selectedPromotion.price_after)) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Dates and Timeline -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">Timeline</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">Created Date</label>
+            <p class="text-gray-900 font-medium">{{ selectedPromotion.created_at | date:'MMM dd, yyyy HH:mm' }}</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-xl">
+            <label class="text-sm font-medium text-gray-500">End Date</label>
+            <p class="text-gray-900 font-medium">{{ selectedPromotion.end_date | date:'MMM dd, yyyy HH:mm' }}</p>
+          </div>
+        </div>
+        <div class="mt-4 p-4 rounded-xl" 
+             [class.bg-green-50]="!isPromotionExpired(selectedPromotion.end_date)"
+             [class.bg-red-50]="isPromotionExpired(selectedPromotion.end_date)">
+          <div class="flex items-center" 
+               [class.text-green-600]="!isPromotionExpired(selectedPromotion.end_date)"
+               [class.text-red-600]="isPromotionExpired(selectedPromotion.end_date)">
+            <i class="fas fa-clock mr-2"></i>
+            <span *ngIf="!isPromotionExpired(selectedPromotion.end_date)" class="font-medium">
+              {{ getDaysRemaining(selectedPromotion.end_date) }} days remaining
+            </span>
+            <span *ngIf="isPromotionExpired(selectedPromotion.end_date)" class="font-medium">
+              This promotion has expired
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Insights (if available) -->
+      <div *ngIf="selectedPromotion.expected_volume_impact || selectedPromotion.expected_revenue_impact" class="mb-6">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">AI Insights</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div *ngIf="selectedPromotion.expected_volume_impact" class="bg-purple-50 p-4 rounded-xl border border-purple-200">
+            <label class="text-sm font-medium text-purple-600">Expected Volume Impact</label>
+            <p class="text-xl font-bold text-purple-700">{{ selectedPromotion.expected_volume_impact }}%</p>
+          </div>
+          <div *ngIf="selectedPromotion.expected_revenue_impact" class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+            <label class="text-sm font-medium text-indigo-600">Expected Revenue Impact</label>
+            <p class="text-xl font-bold text-indigo-700">{{ formatCurrency(selectedPromotion.expected_revenue_impact) }}</p>
+          </div>
+        </div>
+        <div *ngIf="selectedPromotion.prediction_confidence" class="mt-4 bg-gray-50 p-4 rounded-xl">
+          <label class="text-sm font-medium text-gray-500">Prediction Confidence</label>
+          <div class="flex items-center mt-2">
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" [style.width.%]="selectedPromotion.prediction_confidence * 100"></div>
+            </div>
+            <span class="ml-2 text-sm font-medium text-gray-700">{{ (selectedPromotion.prediction_confidence * 100) | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-4 border-t border-gray-200">
+        <button 
+          (click)="closeDetailsModal()"
+          class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition-all duration-200 font-medium">
+          Close
+        </button>
+        <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium">
+          <i class="fas fa-edit mr-2"></i>
+          Edit Promotion
+        </button>
       </div>
     </div>
   </div>

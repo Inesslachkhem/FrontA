@@ -93,8 +93,8 @@ export class PromotionService {
     return this.http.get<any[]>(`${this.apiUrl}/categorie`).pipe(
       map(categories => {
         return categories.map((cat: any) => ({
-          id: cat.id,
-          name: cat.name
+          id: cat.idCategorie, // Mapping correct : idCategorie -> id
+          name: cat.nom        // Mapping correct : nom -> name
         }));
       }),
       catchError(error => {
@@ -149,33 +149,34 @@ export class PromotionService {
     return {
       id: dotNetPromo.id,
       code_article: dotNetPromo.codeArticle,
-      product_name: dotNetPromo.article?.libelle || 'Product Name Not Available',
-      category_name: dotNetPromo.article?.categorie?.nom || 'Category Not Available',
-      discount_percentage: `${dotNetPromo.tauxReduction}%`,
+      // Try both capitalized and camelCase versions for robustness
+      product_name: dotNetPromo.article?.libelle || dotNetPromo.article?.Libelle || 'Product Name Not Available',
+      category_name: dotNetPromo.article?.categorie?.nom || dotNetPromo.article?.categorie?.Nom || 'Category Not Available',
+      discount_percentage: `${(dotNetPromo.tauxReduction * 100).toFixed(1)}%`,
       price_before: dotNetPromo.prix_Vente_TND_Avant?.toString() || '0',
       price_after: dotNetPromo.prix_Vente_TND_Apres?.toString() || '0',
       end_date: dotNetPromo.dateFin,
       created_at: dotNetPromo.dateCreation,
       status: this.getPromotionStatus(dotNetPromo.dateFin),
-      expected_volume_impact: dotNetPromo.expectedVolumeImpact,
+      expected_volume_impact: this.normalizeVolumeImpact(dotNetPromo.expectedVolumeImpact),
       expected_revenue_impact: dotNetPromo.expectedRevenueImpact
     };
   }
 
   // Analyze category for promotion opportunities (placeholder for now)
-  analyzeCategory(categoryId: number): Observable<PromotionAnalysis[]> {
+  analyzeCategory(categoryId: string): Observable<PromotionAnalysis[]> {
     // For now, return empty array since the backend doesn't have this specific endpoint
     // This could be implemented by calling multiple endpoints and combining data
     return of([]);
   }
 
   // Generate promotions using AI (calls the AI optimal promotions endpoint)
-  generatePromotions(categoryId?: number): Observable<PromotionGeneration> {
+  generatePromotions(categoryId?: string): Observable<PromotionGeneration> {
     return this.http.get<any>(`${this.apiUrl}/promotion/ai-optimal`).pipe(
       map(response => {
         // Transform the response to match the expected format
         const generated: PromotionGeneration = {
-          category_id: categoryId || 0,
+          category_id: categoryId || '0',
           promotions_generated: response.length || 0,
           promotions_saved: response.length || 0,
           promotions: response.map((item: any) => ({
@@ -354,6 +355,20 @@ export class PromotionService {
       return 'bg-gradient-to-br from-yellow-500 to-yellow-600'; // Low-medium discount
     } else {
       return 'bg-gradient-to-br from-green-500 to-green-600'; // Low discount
+    }
+  }
+
+  private normalizeVolumeImpact(value?: number): number | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    
+    // If the value is less than 1, treat it as a decimal rate and convert to percentage
+    // If the value is >= 1, assume it's already a percentage
+    if (Math.abs(value) < 1) {
+      return Number((value * 100).toFixed(1));
+    } else {
+      return Number(value.toFixed(1));
     }
   }
 }
