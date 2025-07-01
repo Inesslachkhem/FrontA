@@ -4,26 +4,33 @@
   <div class="max-w-7xl mx-auto">
     <!-- Page Title and Actions -->
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <div
+        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+      >
         <div>
           <h1 class="text-4xl font-bold text-gray-900 mb-2">
             <i class="fas fa-tags text-blue-600 mr-4"></i>
             Smart Promotions
           </h1>
-          <p class="text-gray-600 text-lg">Manage and optimize your promotional campaigns with AI-powered insights</p>
+          <p class="text-gray-600 text-lg">
+            Manage and optimize your promotional campaigns with AI-powered
+            insights
+          </p>
         </div>
-        
+
         <div class="flex flex-col sm:flex-row gap-4">
-          <button 
+          <button
             (click)="refreshData()"
-            class="flex items-center justify-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium">
+            class="flex items-center justify-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium"
+          >
             <i class="fas fa-sync-alt mr-2" [class.animate-spin]="loading"></i>
             Refresh
           </button>
-          
-          <button 
+
+          <button
             (click)="openGenerateModal()"
-            class="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium">
+            class="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
+          >
             <i class="fas fa-magic mr-2"></i>
             Generate Promotions
           </button>
@@ -34,52 +41,78 @@
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <!-- Total Promotions -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200">
+      <div
+        class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+      >
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm font-medium">Total Promotions</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ promotionStats.total_promotions }}</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">
+              {{ promotionStats.total_promotions }}
+            </p>
           </div>
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+          <div
+            class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"
+          >
             <i class="fas fa-tags text-blue-600 text-xl"></i>
           </div>
         </div>
       </div>
 
       <!-- Active Promotions -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200">
+      <div
+        class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+      >
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm font-medium">Active Promotions</p>
-            <p class="text-3xl font-bold text-green-600 mt-1">{{ promotionStats.active_promotions }}</p>
+            <p class="text-3xl font-bold text-green-600 mt-1">
+              {{ promotionStats.active_promotions }}
+            </p>
           </div>
-          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+          <div
+            class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"
+          >
             <i class="fas fa-play-circle text-green-600 text-xl"></i>
           </div>
         </div>
       </div>
 
       <!-- Total Savings -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200">
+      <div
+        class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+      >
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-600 text-sm font-medium">Total Discount Value</p>
-            <p class="text-3xl font-bold text-orange-600 mt-1">{{ formatCurrency(promotionStats.total_discount_value) }}</p>
+            <p class="text-gray-600 text-sm font-medium">
+              Total Discount Value
+            </p>
+            <p class="text-3xl font-bold text-orange-600 mt-1">
+              {{ formatCurrency(promotionStats.total_discount_value) }}
+            </p>
           </div>
-          <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+          <div
+            class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center"
+          >
             <i class="fas fa-percentage text-orange-600 text-xl"></i>
           </div>
         </div>
       </div>
 
       <!-- Projected Revenue -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200">
+      <div
+        class="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+      >
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm font-medium">Projected Revenue</p>
-            <p class="text-3xl font-bold text-purple-600 mt-1">{{ formatCurrency(promotionStats.projected_revenue_increase) }}</p>
+            <p class="text-3xl font-bold text-purple-600 mt-1">
+              {{ formatCurrency(promotionStats.projected_revenue_increase) }}
+            </p>
           </div>
-          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+          <div
+            class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"
+          >
             <i class="fas fa-chart-line text-purple-600 text-xl"></i>
           </div>
         </div>
@@ -91,55 +124,80 @@
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <!-- Search -->
         <div class="lg:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Search Promotions</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Search Promotions</label
+          >
           <div class="relative">
-            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <i
+              class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            ></i>
             <input
               type="text"
               [(ngModel)]="searchTerm"
               (input)="onSearchChange()"
               placeholder="Search by product, category, or code..."
-              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            />
           </div>
         </div>
 
         <!-- Status Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Status</label
+          >
           <select
             [(ngModel)]="statusFilter"
             (change)="onFilterChange()"
-            class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
-            <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+            class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+          >
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
           </select>
         </div>
 
         <!-- Category Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Category</label
+          >
           <select
             [(ngModel)]="categoryFilter"
             (change)="onFilterChange()"
-            class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+            class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+          >
             <option value="all">All Categories</option>
-            <option *ngFor="let category of categories" [value]="category.name">{{ category.name }}</option>
+            <option *ngFor="let category of categories" [value]="category.name">
+              {{ category.name }}
+            </option>
           </select>
         </div>
 
         <!-- Sort -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Sort By</label
+          >
           <div class="flex gap-2">
             <select
               [(ngModel)]="sortBy"
               (change)="onSortChange()"
-              class="flex-1 py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
-              <option *ngFor="let option of sortOptions" [value]="option.value">{{ option.label }}</option>
+              class="flex-1 py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option *ngFor="let option of sortOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
             </select>
             <button
               (click)="toggleSortOrder()"
-              class="px-3 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200">
-              <i class="fas" [class.fa-sort-up]="sortOrder === 'asc'" [class.fa-sort-down]="sortOrder === 'desc'"></i>
+              class="px-3 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200"
+            >
+              <i
+                class="fas"
+                [class.fa-sort-up]="sortOrder === 'asc'"
+                [class.fa-sort-down]="sortOrder === 'desc'"
+              ></i>
             </button>
           </div>
         </div>
@@ -149,35 +207,63 @@
     <!-- Loading State -->
     <div *ngIf="loading" class="flex items-center justify-center py-16">
       <div class="text-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div
+          class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"
+        ></div>
         <p class="text-gray-600 text-lg">Loading amazing promotions...</p>
       </div>
     </div>
 
     <!-- Promotions Grid -->
-    <div *ngIf="!loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div
+      *ngIf="!loading"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+    >
       <div
-        *ngFor="let promotion of filteredPromotions; trackBy: trackByPromotionId"
-        class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-        
+        *ngFor="
+          let promotion of filteredPromotions;
+          trackBy: trackByPromotionId
+        "
+        class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+      >
         <!-- Promotion Card Header -->
-        <div [class]="getPromotionCardClass(promotion) + ' p-6 text-white relative overflow-hidden'">
+        <div
+          [class]="
+            getPromotionCardClass(promotion) +
+            ' p-6 text-white relative overflow-hidden'
+          "
+        >
           <!-- Background Pattern -->
           <div class="absolute inset-0 opacity-10">
-            <div class="absolute -top-4 -right-4 w-24 h-24 rounded-full border-4 border-white"></div>
-            <div class="absolute -bottom-4 -left-4 w-32 h-32 rounded-full border-4 border-white"></div>
+            <div
+              class="absolute -top-4 -right-4 w-24 h-24 rounded-full border-4 border-white"
+            ></div>
+            <div
+              class="absolute -bottom-4 -left-4 w-32 h-32 rounded-full border-4 border-white"
+            ></div>
           </div>
-          
+
           <div class="relative z-10">
             <div class="flex items-center justify-between mb-4">
-              <span [class]="getStatusBadgeClass(promotion.status!) + ' px-3 py-1 rounded-full text-xs font-semibold border'">
+              <span
+                [class]="
+                  getStatusBadgeClass(promotion.status!) +
+                  ' px-3 py-1 rounded-full text-xs font-semibold border'
+                "
+              >
                 {{ promotion.status | titlecase }}
               </span>
-              <span class="text-4xl font-bold">{{ promotion.discount_percentage }}</span>
+              <span class="text-4xl font-bold">{{
+                promotion.discount_percentage
+              }}</span>
             </div>
-            
-            <h3 class="text-xl font-bold mb-2 truncate">{{ promotion.product_name || 'Product Name Not Available' }}</h3>
-            <p class="text-white/80 text-sm">{{ promotion.category_name || 'Category Not Available' }}</p>
+
+            <h3 class="text-xl font-bold mb-2 truncate">
+              {{ promotion.product_name || "Product Name Not Available" }}
+            </h3>
+            <p class="text-white/80 text-sm">
+              {{ promotion.category_name || "Category Not Available" }}
+            </p>
           </div>
         </div>
 
@@ -187,11 +273,15 @@
           <div class="mb-6">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm text-gray-500">Original Price</span>
-              <span class="text-lg text-gray-500 line-through">{{ formatCurrency(promotion.price_before) }}</span>
+              <span class="text-lg text-gray-500 line-through">{{
+                formatCurrency(promotion.price_before)
+              }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium text-gray-700">New Price</span>
-              <span class="text-2xl font-bold text-green-600">{{ formatCurrency(promotion.price_after) }}</span>
+              <span class="text-2xl font-bold text-green-600">{{
+                formatCurrency(promotion.price_after)
+              }}</span>
             </div>
           </div>
 
@@ -201,15 +291,17 @@
               <i class="fas fa-barcode w-4 mr-3 text-gray-400"></i>
               <span class="font-mono">{{ promotion.code_article }}</span>
             </div>
-            
+
             <div class="flex items-center text-sm text-gray-600">
               <i class="fas fa-calendar-alt w-4 mr-3 text-gray-400"></i>
-              <span>Ends {{ promotion.end_date | date:'MMM dd, yyyy' }}</span>
+              <span>Ends {{ promotion.end_date | date : "MMM dd, yyyy" }}</span>
             </div>
-            
-            <div class="flex items-center text-sm" 
-                 [class.text-green-600]="!isPromotionExpired(promotion.end_date)"
-                 [class.text-red-600]="isPromotionExpired(promotion.end_date)">
+
+            <div
+              class="flex items-center text-sm"
+              [class.text-green-600]="!isPromotionExpired(promotion.end_date)"
+              [class.text-red-600]="isPromotionExpired(promotion.end_date)"
+            >
               <i class="fas fa-clock w-4 mr-3"></i>
               <span *ngIf="!isPromotionExpired(promotion.end_date)">
                 {{ getDaysRemaining(promotion.end_date) }} days remaining
@@ -222,39 +314,109 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-2">
-            <button 
-              (click)="openDetailsModal(promotion)"
-              class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium">
-              <i class="fas fa-eye mr-2"></i>
-              View Details
-            </button>
-            <button class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium">
-              <i class="fas fa-edit mr-2"></i>
-              Edit
-            </button>
+            <!-- Pending promotions - Show approval buttons -->
+            <div
+              *ngIf="isPendingPromotion(promotion)"
+              class="flex gap-2 w-full"
+            >
+              <button
+                (click)="approvePromotion(promotion)"
+                class="flex-1 bg-green-50 hover:bg-green-100 text-green-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-check mr-2"></i>
+                Approve
+              </button>
+              <button
+                (click)="rejectPromotion(promotion)"
+                class="flex-1 bg-red-50 hover:bg-red-100 text-red-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-times mr-2"></i>
+                Reject
+              </button>
+            </div>
+
+            <!-- Approved promotions - Show view and edit buttons -->
+            <div
+              *ngIf="isApprovedPromotion(promotion)"
+              class="flex gap-2 w-full"
+            >
+              <button
+                (click)="openDetailsModal(promotion)"
+                class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-eye mr-2"></i>
+                View Details
+              </button>
+              <button
+                class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-edit mr-2"></i>
+                Edit
+              </button>
+            </div>
+
+            <!-- Rejected promotions - Show reactivate option -->
+            <div
+              *ngIf="
+                !isPendingPromotion(promotion) &&
+                !isApprovedPromotion(promotion)
+              "
+              class="flex gap-2 w-full"
+            >
+              <button
+                (click)="updatePromotionAcceptance(promotion, true)"
+                class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-redo mr-2"></i>
+                Reactivate
+              </button>
+              <button
+                (click)="openDetailsModal(promotion)"
+                class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-xl transition-all duration-200 text-sm font-medium"
+              >
+                <i class="fas fa-eye mr-2"></i>
+                View
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="!loading && filteredPromotions.length === 0" class="text-center py-16">
+    <div
+      *ngIf="!loading && filteredPromotions.length === 0"
+      class="text-center py-16"
+    >
       <div class="max-w-md mx-auto">
-        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div
+          class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6"
+        >
           <i class="fas fa-tags text-gray-400 text-3xl"></i>
         </div>
-        <h3 class="text-2xl font-bold text-gray-900 mb-4">No Promotions Found</h3>
+        <h3 class="text-2xl font-bold text-gray-900 mb-4">
+          No Promotions Found
+        </h3>
         <p class="text-gray-600 mb-8">
-          <span *ngIf="searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'">
+          <span
+            *ngIf="
+              searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
+            "
+          >
             Try adjusting your filters or search terms.
           </span>
-          <span *ngIf="!searchTerm && statusFilter === 'all' && categoryFilter === 'all'">
+          <span
+            *ngIf="
+              !searchTerm && statusFilter === 'all' && categoryFilter === 'all'
+            "
+          >
             Start by generating some smart promotions for your products.
           </span>
         </p>
-        <button 
+        <button
           (click)="openGenerateModal()"
-          class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium">
+          class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
+        >
           <i class="fas fa-magic mr-2"></i>
           Generate Your First Promotion
         </button>
@@ -264,31 +426,45 @@
 </div>
 
 <!-- Generate Promotions Modal -->
-<div *ngIf="showGenerateModal" 
-     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-     (click)="closeGenerateModal()">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto" 
-       (click)="$event.stopPropagation()">
+<div
+  *ngIf="showGenerateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+  (click)="closeGenerateModal()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+    (click)="$event.stopPropagation()"
+  >
     <!-- Modal Header -->
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold">Generate Smart Promotions</h2>
-        <button (click)="closeGenerateModal()" class="text-white hover:text-gray-200">
+        <button
+          (click)="closeGenerateModal()"
+          class="text-white hover:text-gray-200"
+        >
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
-      <p class="text-blue-100 mt-2">AI-powered promotion generation for maximum revenue impact</p>
+      <p class="text-blue-100 mt-2">
+        AI-powered promotion generation for maximum revenue impact
+      </p>
     </div>
 
     <!-- Modal Body -->
     <div class="p-6">
       <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-3">Select Category</label>
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Select Category</label
+        >
         <select
           [(ngModel)]="selectedCategoryId"
-          class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+          class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+        >
           <option value="">Choose a category...</option>
-          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+          <option *ngFor="let category of categories" [value]="category.id">
+            {{ category.name }}
+          </option>
         </select>
       </div>
 
@@ -306,13 +482,15 @@
       <div class="flex gap-3">
         <button
           (click)="closeGenerateModal()"
-          class="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium">
+          class="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+        >
           Cancel
         </button>
         <button
           (click)="generatePromotions()"
           [disabled]="!selectedCategoryId || generating"
-          class="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+          class="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <span *ngIf="!generating">
             <i class="fas fa-magic mr-2"></i>
             Generate
@@ -328,34 +506,51 @@
 </div>
 
 <!-- Analysis Modal -->
-<div *ngIf="showAnalysisModal" 
-     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-     (click)="closeAnalysisModal()">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" 
-       (click)="$event.stopPropagation()">
+<div
+  *ngIf="showAnalysisModal"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+  (click)="closeAnalysisModal()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+    (click)="$event.stopPropagation()"
+  >
     <!-- Modal Header -->
     <div class="bg-gradient-to-r from-purple-600 to-purple-700 p-6 text-white">
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold">Category Analysis</h2>
-        <button (click)="closeAnalysisModal()" class="text-white hover:text-gray-200">
+        <button
+          (click)="closeAnalysisModal()"
+          class="text-white hover:text-gray-200"
+        >
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
-      <p class="text-purple-100 mt-2">Detailed analysis of promotion opportunities</p>
+      <p class="text-purple-100 mt-2">
+        Detailed analysis of promotion opportunities
+      </p>
     </div>
 
     <!-- Modal Body -->
     <div class="p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngFor="let analysis of analysisData">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 gap-4"
+        *ngFor="let analysis of analysisData"
+      >
         <!-- Analysis cards would go here -->
         <div class="border border-gray-200 rounded-xl p-4">
-          <h4 class="font-semibold text-gray-900">{{ analysis.product_name }}</h4>
+          <h4 class="font-semibold text-gray-900">
+            {{ analysis.product_name }}
+          </h4>
           <div class="mt-2 space-y-1 text-sm text-gray-600">
             <p>Price: {{ analysis.current_price }}</p>
             <p>Monthly Sales: {{ analysis.avg_monthly_sales }}</p>
             <p>Stock: {{ analysis.stock_level }}</p>
             <p>Trend: {{ analysis.sales_trend }}</p>
-            <p *ngIf="analysis.needs_promotion" class="text-green-600 font-medium">
+            <p
+              *ngIf="analysis.needs_promotion"
+              class="text-green-600 font-medium"
+            >
               Recommended: {{ analysis.recommended_discount }} discount
             </p>
           </div>
@@ -366,22 +561,39 @@
 </div>
 
 <!-- Promotion Details Modal -->
-<div *ngIf="showDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+<div
+  *ngIf="showDetailsModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+  >
     <!-- Modal Header -->
-    <div [class]="getPromotionCardClass(selectedPromotion!) + ' p-6 text-white relative overflow-hidden'">
+    <div
+      [class]="
+        getPromotionCardClass(selectedPromotion!) +
+        ' p-6 text-white relative overflow-hidden'
+      "
+    >
       <!-- Background Pattern -->
       <div class="absolute inset-0 opacity-10">
-        <div class="absolute -top-4 -right-4 w-24 h-24 rounded-full border-4 border-white"></div>
-        <div class="absolute -bottom-4 -left-4 w-32 h-32 rounded-full border-4 border-white"></div>
+        <div
+          class="absolute -top-4 -right-4 w-24 h-24 rounded-full border-4 border-white"
+        ></div>
+        <div
+          class="absolute -bottom-4 -left-4 w-32 h-32 rounded-full border-4 border-white"
+        ></div>
       </div>
-      
+
       <div class="relative z-10 flex items-center justify-between">
         <div class="flex-1">
           <h2 class="text-2xl font-bold mb-2">Promotion Details</h2>
           <p class="text-white/80">Complete information for this promotion</p>
         </div>
-        <button (click)="closeDetailsModal()" class="text-white hover:text-gray-200 ml-4">
+        <button
+          (click)="closeDetailsModal()"
+          class="text-white hover:text-gray-200 ml-4"
+        >
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
@@ -391,23 +603,40 @@
     <div class="p-6" *ngIf="selectedPromotion">
       <!-- Basic Information -->
       <div class="mb-6">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900">Basic Information</h3>
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">
+          Basic Information
+        </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-gray-50 p-4 rounded-xl">
-            <label class="text-sm font-medium text-gray-500">Product Name</label>
-            <p class="text-gray-900 font-medium">{{ selectedPromotion.product_name || 'Not Available' }}</p>
+            <label class="text-sm font-medium text-gray-500"
+              >Product Name</label
+            >
+            <p class="text-gray-900 font-medium">
+              {{ selectedPromotion.product_name || "Not Available" }}
+            </p>
           </div>
           <div class="bg-gray-50 p-4 rounded-xl">
             <label class="text-sm font-medium text-gray-500">Category</label>
-            <p class="text-gray-900 font-medium">{{ selectedPromotion.category_name || 'Not Available' }}</p>
+            <p class="text-gray-900 font-medium">
+              {{ selectedPromotion.category_name || "Not Available" }}
+            </p>
           </div>
           <div class="bg-gray-50 p-4 rounded-xl">
-            <label class="text-sm font-medium text-gray-500">Article Code</label>
-            <p class="text-gray-900 font-mono">{{ selectedPromotion.code_article }}</p>
+            <label class="text-sm font-medium text-gray-500"
+              >Article Code</label
+            >
+            <p class="text-gray-900 font-mono">
+              {{ selectedPromotion.code_article }}
+            </p>
           </div>
           <div class="bg-gray-50 p-4 rounded-xl">
             <label class="text-sm font-medium text-gray-500">Status</label>
-            <span [class]="getStatusBadgeClass(selectedPromotion.status!) + ' px-3 py-1 rounded-full text-xs font-semibold border'">
+            <span
+              [class]="
+                getStatusBadgeClass(selectedPromotion.status!) +
+                ' px-3 py-1 rounded-full text-xs font-semibold border'
+              "
+            >
               {{ selectedPromotion.status | titlecase }}
             </span>
           </div>
@@ -416,25 +645,42 @@
 
       <!-- Pricing Information -->
       <div class="mb-6">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900">Pricing Information</h3>
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">
+          Pricing Information
+        </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-red-50 p-4 rounded-xl border border-red-200">
-            <label class="text-sm font-medium text-red-600">Original Price</label>
-            <p class="text-2xl font-bold text-red-700 line-through">{{ formatCurrency(selectedPromotion.price_before) }}</p>
+            <label class="text-sm font-medium text-red-600"
+              >Original Price</label
+            >
+            <p class="text-2xl font-bold text-red-700 line-through">
+              {{ formatCurrency(selectedPromotion.price_before) }}
+            </p>
           </div>
           <div class="bg-green-50 p-4 rounded-xl border border-green-200">
             <label class="text-sm font-medium text-green-600">New Price</label>
-            <p class="text-2xl font-bold text-green-700">{{ formatCurrency(selectedPromotion.price_after) }}</p>
+            <p class="text-2xl font-bold text-green-700">
+              {{ formatCurrency(selectedPromotion.price_after) }}
+            </p>
           </div>
           <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
             <label class="text-sm font-medium text-blue-600">Discount</label>
-            <p class="text-2xl font-bold text-blue-700">{{ selectedPromotion.discount_percentage }}</p>
+            <p class="text-2xl font-bold text-blue-700">
+              {{ selectedPromotion.discount_percentage }}
+            </p>
           </div>
         </div>
         <div class="mt-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
           <label class="text-sm font-medium text-yellow-600">You Save</label>
           <p class="text-xl font-bold text-yellow-700">
-            {{ formatCurrency(calculateSavings(selectedPromotion.price_before, selectedPromotion.price_after)) }}
+            {{
+              formatCurrency(
+                calculateSavings(
+                  selectedPromotion.price_before,
+                  selectedPromotion.price_after
+                )
+              )
+            }}
           </p>
         </div>
       </div>
@@ -444,25 +690,45 @@
         <h3 class="text-lg font-semibold mb-4 text-gray-900">Timeline</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-gray-50 p-4 rounded-xl">
-            <label class="text-sm font-medium text-gray-500">Created Date</label>
-            <p class="text-gray-900 font-medium">{{ selectedPromotion.created_at | date:'MMM dd, yyyy HH:mm' }}</p>
+            <label class="text-sm font-medium text-gray-500"
+              >Created Date</label
+            >
+            <p class="text-gray-900 font-medium">
+              {{ selectedPromotion.created_at | date : "MMM dd, yyyy HH:mm" }}
+            </p>
           </div>
           <div class="bg-gray-50 p-4 rounded-xl">
             <label class="text-sm font-medium text-gray-500">End Date</label>
-            <p class="text-gray-900 font-medium">{{ selectedPromotion.end_date | date:'MMM dd, yyyy HH:mm' }}</p>
+            <p class="text-gray-900 font-medium">
+              {{ selectedPromotion.end_date | date : "MMM dd, yyyy HH:mm" }}
+            </p>
           </div>
         </div>
-        <div class="mt-4 p-4 rounded-xl" 
-             [class.bg-green-50]="!isPromotionExpired(selectedPromotion.end_date)"
-             [class.bg-red-50]="isPromotionExpired(selectedPromotion.end_date)">
-          <div class="flex items-center" 
-               [class.text-green-600]="!isPromotionExpired(selectedPromotion.end_date)"
-               [class.text-red-600]="isPromotionExpired(selectedPromotion.end_date)">
+        <div
+          class="mt-4 p-4 rounded-xl"
+          [class.bg-green-50]="!isPromotionExpired(selectedPromotion.end_date)"
+          [class.bg-red-50]="isPromotionExpired(selectedPromotion.end_date)"
+        >
+          <div
+            class="flex items-center"
+            [class.text-green-600]="
+              !isPromotionExpired(selectedPromotion.end_date)
+            "
+            [class.text-red-600]="
+              isPromotionExpired(selectedPromotion.end_date)
+            "
+          >
             <i class="fas fa-clock mr-2"></i>
-            <span *ngIf="!isPromotionExpired(selectedPromotion.end_date)" class="font-medium">
+            <span
+              *ngIf="!isPromotionExpired(selectedPromotion.end_date)"
+              class="font-medium"
+            >
               {{ getDaysRemaining(selectedPromotion.end_date) }} days remaining
             </span>
-            <span *ngIf="isPromotionExpired(selectedPromotion.end_date)" class="font-medium">
+            <span
+              *ngIf="isPromotionExpired(selectedPromotion.end_date)"
+              class="font-medium"
+            >
               This promotion has expired
             </span>
           </div>
@@ -470,37 +736,73 @@
       </div>
 
       <!-- AI Insights (if available) -->
-      <div *ngIf="selectedPromotion.expected_volume_impact || selectedPromotion.expected_revenue_impact" class="mb-6">
+      <div
+        *ngIf="
+          selectedPromotion.expected_volume_impact ||
+          selectedPromotion.expected_revenue_impact
+        "
+        class="mb-6"
+      >
         <h3 class="text-lg font-semibold mb-4 text-gray-900">AI Insights</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div *ngIf="selectedPromotion.expected_volume_impact" class="bg-purple-50 p-4 rounded-xl border border-purple-200">
-            <label class="text-sm font-medium text-purple-600">Expected Volume Impact</label>
-            <p class="text-xl font-bold text-purple-700">{{ selectedPromotion.expected_volume_impact }}%</p>
+          <div
+            *ngIf="selectedPromotion.expected_volume_impact"
+            class="bg-purple-50 p-4 rounded-xl border border-purple-200"
+          >
+            <label class="text-sm font-medium text-purple-600"
+              >Expected Volume Impact</label
+            >
+            <p class="text-xl font-bold text-purple-700">
+              {{ selectedPromotion.expected_volume_impact }}%
+            </p>
           </div>
-          <div *ngIf="selectedPromotion.expected_revenue_impact" class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-            <label class="text-sm font-medium text-indigo-600">Expected Revenue Impact</label>
-            <p class="text-xl font-bold text-indigo-700">{{ formatCurrency(selectedPromotion.expected_revenue_impact) }}</p>
+          <div
+            *ngIf="selectedPromotion.expected_revenue_impact"
+            class="bg-indigo-50 p-4 rounded-xl border border-indigo-200"
+          >
+            <label class="text-sm font-medium text-indigo-600"
+              >Expected Revenue Impact</label
+            >
+            <p class="text-xl font-bold text-indigo-700">
+              {{ formatCurrency(selectedPromotion.expected_revenue_impact) }}
+            </p>
           </div>
         </div>
-        <div *ngIf="selectedPromotion.prediction_confidence" class="mt-4 bg-gray-50 p-4 rounded-xl">
-          <label class="text-sm font-medium text-gray-500">Prediction Confidence</label>
+        <div
+          *ngIf="selectedPromotion.prediction_confidence"
+          class="mt-4 bg-gray-50 p-4 rounded-xl"
+        >
+          <label class="text-sm font-medium text-gray-500"
+            >Prediction Confidence</label
+          >
           <div class="flex items-center mt-2">
             <div class="flex-1 bg-gray-200 rounded-full h-2">
-              <div class="bg-blue-600 h-2 rounded-full" [style.width.%]="selectedPromotion.prediction_confidence * 100"></div>
+              <div
+                class="bg-blue-600 h-2 rounded-full"
+                [style.width.%]="selectedPromotion.prediction_confidence * 100"
+              ></div>
             </div>
-            <span class="ml-2 text-sm font-medium text-gray-700">{{ (selectedPromotion.prediction_confidence * 100) | number:'1.0-0' }}%</span>
+            <span class="ml-2 text-sm font-medium text-gray-700"
+              >{{
+                selectedPromotion.prediction_confidence * 100
+                  | number : "1.0-0"
+              }}%</span
+            >
           </div>
         </div>
       </div>
 
       <!-- Action Buttons -->
       <div class="flex gap-3 pt-4 border-t border-gray-200">
-        <button 
+        <button
           (click)="closeDetailsModal()"
-          class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition-all duration-200 font-medium">
+          class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition-all duration-200 font-medium"
+        >
           Close
         </button>
-        <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium">
+        <button
+          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium"
+        >
           <i class="fas fa-edit mr-2"></i>
           Edit Promotion
         </button>

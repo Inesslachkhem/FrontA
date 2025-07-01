@@ -8,7 +8,7 @@ export interface Promotion {
   price_after: string;
   end_date: string;
   created_at: string;
-  status?: 'active' | 'expired' | 'pending';
+  status?: 'active' | 'expired' | 'pending' | 'rejected';
   expected_volume_impact?: number;
   expected_revenue_impact?: number;
   is_accepted?: boolean;

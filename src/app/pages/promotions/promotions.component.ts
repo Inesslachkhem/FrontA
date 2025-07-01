@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, Observable } from 'rxjs';
 import { PromotionService } from '../../services/promotion.service';
 import {
   AIPromotionService,
@@ -74,6 +74,9 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Filter options
   statusOptions: FilterOption[] = [
     { value: 'all', label: 'All Promotions' },
+    { value: 'pending', label: 'Pending Approval' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
     { value: 'active', label: 'Active' },
     { value: 'expired', label: 'Expired' },
   ];
@@ -248,21 +251,43 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Data loading methods
   loadPromotions(): void {
     this.loading = true;
-    this.promotionService
-      .getActivePromotions()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (promotions) => {
-          this.promotions = promotions;
-          this.applyFilters();
-          this.calculateStats();
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error loading promotions:', error);
-          this.loading = false;
-        },
-      });
+
+    // Choose the appropriate service method based on status filter
+    let promotionObservable: Observable<Promotion[]>;
+
+    switch (this.statusFilter) {
+      case 'pending':
+        promotionObservable = this.promotionService.getPendingPromotions();
+        break;
+      case 'approved':
+        promotionObservable = this.promotionService.getApprovedPromotions();
+        break;
+      case 'rejected':
+        promotionObservable = this.promotionService.getRejectedPromotions();
+        break;
+      case 'active':
+        promotionObservable = this.promotionService.getOnlyActivePromotions();
+        break;
+      case 'expired':
+        promotionObservable = this.promotionService.getExpiredPromotions();
+        break;
+      default:
+        promotionObservable = this.promotionService.getActivePromotions();
+        break;
+    }
+
+    promotionObservable.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (promotions: Promotion[]) => {
+        this.promotions = promotions;
+        this.applyFilters();
+        this.calculateStats();
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading promotions:', error);
+        this.loading = false;
+      },
+    });
   }
 
   loadCategories(): void {
@@ -356,7 +381,8 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   }
 
   onFilterChange(): void {
-    this.applyFilters();
+    // If status filter changed, reload promotions with new filter
+    this.loadPromotions();
   }
 
   onSortChange(): void {
@@ -447,6 +473,157 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   closeAIInsightsModal(): void {
     this.showAIInsightsModal = false;
+  }
+
+  // Promotion approval/rejection methods
+  approvePromotion(promotion: Promotion): void {
+    if (!promotion.id) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to approve the promotion for ${promotion.product_name}?`
+    );
+    if (!confirmed) return;
+
+    this.promotionService.approvePromotion(promotion.id).subscribe({
+      next: (response) => {
+        console.log('Promotion approved:', response);
+        this.showSuccessMessage(
+          `Promotion for ${promotion.product_name} has been approved successfully.`
+        );
+        this.refreshData();
+      },
+      error: (error) => {
+        console.error('Error approving promotion:', error);
+        this.showErrorMessage('Failed to approve promotion. Please try again.');
+      },
+    });
+  }
+
+  rejectPromotion(promotion: Promotion): void {
+    if (!promotion.id) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to reject the promotion for ${promotion.product_name}?`
+    );
+    if (!confirmed) return;
+
+    this.promotionService.rejectPromotion(promotion.id).subscribe({
+      next: (response) => {
+        console.log('Promotion rejected:', response);
+        this.showSuccessMessage(
+          `Promotion for ${promotion.product_name} has been rejected.`
+        );
+        this.refreshData();
+      },
+      error: (error) => {
+        console.error('Error rejecting promotion:', error);
+        this.showErrorMessage('Failed to reject promotion. Please try again.');
+      },
+    });
+  }
+
+  updatePromotionAcceptance(promotion: Promotion, isAccepted: boolean): void {
+    if (!promotion.id) return;
+
+    const action = isAccepted ? 'approve' : 'reject';
+    const confirmed = confirm(
+      `Are you sure you want to ${action} the promotion for ${promotion.product_name}?`
+    );
+    if (!confirmed) return;
+
+    this.promotionService
+      .updatePromotionAcceptance(promotion.id, isAccepted)
+      .subscribe({
+        next: (response) => {
+          console.log(`Promotion ${action}d:`, response);
+          this.showSuccessMessage(
+            `Promotion for ${promotion.product_name} has been ${action}d successfully.`
+          );
+          this.refreshData();
+        },
+        error: (error) => {
+          console.error(`Error ${action}ing promotion:`, error);
+          this.showErrorMessage(
+            `Failed to ${action} promotion. Please try again.`
+          );
+        },
+      });
+  }
+
+  // Bulk approval/rejection methods
+  bulkApprovePromotions(promotionIds: number[]): void {
+    if (promotionIds.length === 0) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to approve ${promotionIds.length} promotion(s)?`
+    );
+    if (!confirmed) return;
+
+    this.promotionService.bulkApprovePromotions(promotionIds).subscribe({
+      next: (response) => {
+        console.log('Bulk approval response:', response);
+        this.showSuccessMessage(
+          `${response.updatedCount} promotions have been approved successfully.`
+        );
+        this.refreshData();
+      },
+      error: (error) => {
+        console.error('Error in bulk approval:', error);
+        this.showErrorMessage(
+          'Failed to approve promotions. Please try again.'
+        );
+      },
+    });
+  }
+
+  bulkRejectPromotions(promotionIds: number[]): void {
+    if (promotionIds.length === 0) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to reject ${promotionIds.length} promotion(s)?`
+    );
+    if (!confirmed) return;
+
+    this.promotionService.bulkRejectPromotions(promotionIds).subscribe({
+      next: (response) => {
+        console.log('Bulk rejection response:', response);
+        this.showSuccessMessage(
+          `${response.updatedCount} promotions have been rejected successfully.`
+        );
+        this.refreshData();
+      },
+      error: (error) => {
+        console.error('Error in bulk rejection:', error);
+        this.showErrorMessage('Failed to reject promotions. Please try again.');
+      },
+    });
+  }
+
+  // Helper methods for status management
+  isPendingPromotion(promotion: Promotion): boolean {
+    return promotion.status === 'pending' || promotion.is_accepted === false;
+  }
+
+  isApprovedPromotion(promotion: Promotion): boolean {
+    return promotion.is_accepted === true;
+  }
+
+  getRejectionDate(promotion: Promotion): string | null {
+    if (promotion.is_accepted === false && promotion.date_approval) {
+      return promotion.date_approval;
+    }
+    return null;
+  }
+
+  // Message display methods
+  private showSuccessMessage(message: string): void {
+    // You can implement a toast notification system here
+    alert(message); // Temporary implementation
+  }
+
+  private showErrorMessage(message: string): void {
+    // You can implement a toast notification system here
+    alert(message); // Temporary implementation
   }
 
   // Utility methods
