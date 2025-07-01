@@ -3,12 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { PromotionService } from '../../services/promotion.service';
-import { AIPromotionService, AIRecommendation, AIRecommendationResponse } from '../../services/ai-promotion.service';
-import { 
-  Promotion, 
-  PromotionStats, 
-  Category, 
-  PromotionAnalysis 
+import {
+  AIPromotionService,
+  AIRecommendation,
+  AIRecommendationResponse,
+} from '../../services/ai-promotion.service';
+import {
+  Promotion,
+  PromotionStats,
+  Category,
+  PromotionAnalysis,
 } from '../../models/promotion.model';
 
 interface FilterOption {
@@ -21,11 +25,11 @@ interface FilterOption {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './promotions.component.html',
-  styleUrls: ['./promotions.component.css']
+  styleUrls: ['./promotions.component.css'],
 })
 export class PromotionsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   // Data properties
   promotions: Promotion[] = [];
   filteredPromotions: Promotion[] = [];
@@ -35,7 +39,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     active_promotions: 0,
     expired_promotions: 0,
     total_discount_value: 0,
-    projected_revenue_increase: 0
+    projected_revenue_increase: 0,
   };
 
   // AI recommendations
@@ -51,7 +55,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   showDetailsModal = false;
   showAIInsightsModal = false;
   selectedPromotion: Promotion | null = null;
-  
+
   // Filters
   searchTerm = '';
   statusFilter = 'all';
@@ -62,7 +66,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Generation
   selectedCategoryId: string | null = null;
   generating = false;
-  
+
   // Analysis
   analysisData: PromotionAnalysis[] = [];
   analyzingCategory = false;
@@ -71,18 +75,18 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   statusOptions: FilterOption[] = [
     { value: 'all', label: 'All Promotions' },
     { value: 'active', label: 'Active' },
-    { value: 'expired', label: 'Expired' }
+    { value: 'expired', label: 'Expired' },
   ];
 
   sortOptions: FilterOption[] = [
     { value: 'created_at', label: 'Creation Date' },
     { value: 'end_date', label: 'End Date' },
     { value: 'discount_percentage', label: 'Discount %' },
-    { value: 'product_name', label: 'Product Name' }
+    { value: 'product_name', label: 'Product Name' },
   ];
 
   constructor(
-    private promotionService: PromotionService, 
+    private promotionService: PromotionService,
     private aiPromotionService: AIPromotionService
   ) {}
 
@@ -99,7 +103,8 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // AI Methods
   checkAIService(): void {
-    this.aiPromotionService.checkHealth()
+    this.aiPromotionService
+      .checkHealth()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -108,7 +113,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.warn('AI service unavailable:', error);
           this.showAIRecommendations = false;
-        }
+        },
       });
   }
 
@@ -121,21 +126,56 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     this.aiError = null;
 
     try {
-      // Load AI recommendations for each promotion's product
-      for (const promotion of this.promotions.slice(0, 10)) { // Limit to first 10 for demo
-        try {
-          const productData = this.prepareProductDataForAI(promotion);
-          const aiRecommendation = await this.aiPromotionService.getPromotionRecommendation(productData).toPromise();
-          if (aiRecommendation) {
-            this.aiRecommendations.set(promotion.id, aiRecommendation);
+      // Prepare products data for batch AI analysis
+      const productsData = this.promotions
+        .slice(0, 10)
+        .map((promotion) => this.prepareProductDataForAI(promotion));
+
+      // Use getBatchRecommendations instead of individual calls
+      const batchRecommendations = await this.aiPromotionService
+        .getBatchRecommendations(productsData, 10)
+        .toPromise();
+
+      if (batchRecommendations?.recommendations) {
+        batchRecommendations.recommendations.forEach(
+          (rec: any, index: number) => {
+            const promotion = this.promotions[index];
+            if (promotion?.id !== undefined) {
+              this.aiRecommendations.set(promotion.id!, rec);
+            }
           }
-        } catch (error) {
-          console.error('Failed to get AI recommendation for promotion', promotion.id, error);
-        }
+        );
       }
     } catch (error) {
       this.aiError = 'Failed to load AI recommendations';
       console.error('AI recommendations error:', error);
+
+      // Fallback to individual recommendations if batch fails
+      try {
+        for (const promotion of this.promotions.slice(0, 5)) {
+          // Limit to first 5 for fallback
+          try {
+            const productData = this.prepareProductDataForAI(promotion);
+            const aiRecommendation = await this.aiPromotionService
+              .getPromotionRecommendation(productData)
+              .toPromise();
+            if (aiRecommendation && promotion.id !== undefined) {
+              this.aiRecommendations.set(promotion.id, aiRecommendation);
+            }
+          } catch (error) {
+            console.error(
+              'Failed to get AI recommendation for promotion',
+              promotion.id,
+              error
+            );
+          }
+        }
+      } catch (fallbackError) {
+        console.error(
+          'Fallback AI recommendations also failed:',
+          fallbackError
+        );
+      }
     } finally {
       this.aiLoading = false;
     }
@@ -145,17 +185,17 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     return {
       product_id: promotion.id,
       product_name: promotion.product_name,
-      current_price: promotion.original_price || 100, // Default if not available
+      current_price: parseFloat(promotion.price_before) || 100, // Use price_before instead of original_price
       current_stock: 50, // Default - would come from actual product data
       total_sales_90d: 25, // Default - would come from sales analytics
-      total_revenue_90d: (promotion.original_price || 100) * 25,
+      total_revenue_90d: (parseFloat(promotion.price_before) || 100) * 25,
       total_purchased_90d: 75,
       sales_last_30d: 8,
       sales_previous_30d: 10,
       days_since_last_promo: this.calculateDaysSinceLastPromo(promotion),
-      last_promo_discount: promotion.discount_rate,
+      last_promo_discount: parseFloat(promotion.discount_percentage), // Use discount_percentage instead of discount_rate
       promo_count_6months: 1,
-      category_id: promotion.category_id || 1
+      category_id: 1, // Default category_id since it's not in the Promotion interface
     };
   }
 
@@ -163,7 +203,9 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     if (promotion.end_date) {
       const endDate = new Date(promotion.end_date);
       const now = new Date();
-      return Math.floor((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.floor(
+        (now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
     }
     return 365; // Default if no end date
   }
@@ -184,9 +226,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     return this.aiPromotionService.formatPercent(value);
   }
 
-  formatCurrency(value: number): string {
-    return this.aiPromotionService.formatCurrency(value);
-  }
+  // formatCurrency method removed to avoid duplication - using the one below that handles both string and number
 
   showAIInsights(): void {
     this.showAIInsightsModal = true;
@@ -208,7 +248,8 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Data loading methods
   loadPromotions(): void {
     this.loading = true;
-    this.promotionService.getActivePromotions()
+    this.promotionService
+      .getActivePromotions()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (promotions) => {
@@ -220,12 +261,13 @@ export class PromotionsComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error loading promotions:', error);
           this.loading = false;
-        }
+        },
       });
   }
 
   loadCategories(): void {
-    this.promotionService.getCategories()
+    this.promotionService
+      .getCategories()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (categories) => {
@@ -233,7 +275,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error loading categories:', error);
-        }
+        },
       });
   }
 
@@ -244,21 +286,28 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     // Search filter
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(promo => 
-        (promo.product_name && promo.product_name.toLowerCase().includes(term)) ||
-        (promo.category_name && promo.category_name.toLowerCase().includes(term)) ||
-        (promo.code_article && promo.code_article.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        (promo) =>
+          (promo.product_name &&
+            promo.product_name.toLowerCase().includes(term)) ||
+          (promo.category_name &&
+            promo.category_name.toLowerCase().includes(term)) ||
+          (promo.code_article &&
+            promo.code_article.toLowerCase().includes(term))
       );
     }
 
     // Status filter
     if (this.statusFilter !== 'all') {
-      filtered = filtered.filter(promo => promo.status === this.statusFilter);
+      filtered = filtered.filter((promo) => promo.status === this.statusFilter);
     }
 
     // Category filter
     if (this.categoryFilter !== 'all') {
-      filtered = filtered.filter(promo => promo.category_name && promo.category_name === this.categoryFilter);
+      filtered = filtered.filter(
+        (promo) =>
+          promo.category_name && promo.category_name === this.categoryFilter
+      );
     }
 
     // Sort
@@ -296,7 +345,9 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // Statistics calculation
   calculateStats(): void {
-    this.promotionStats = this.promotionService.calculatePromotionStats(this.promotions);
+    this.promotionStats = this.promotionService.calculatePromotionStats(
+      this.promotions
+    );
   }
 
   // Event handlers
@@ -332,7 +383,8 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     if (!this.selectedCategoryId) return;
 
     this.generating = true;
-    this.promotionService.generatePromotions(this.selectedCategoryId)
+    this.promotionService
+      .generatePromotions(this.selectedCategoryId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
@@ -344,14 +396,15 @@ export class PromotionsComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error generating promotions:', error);
           this.generating = false;
-        }
+        },
       });
   }
 
   // Category analysis
   analyzeCategory(categoryId: string): void {
     this.analyzingCategory = true;
-    this.promotionService.analyzeCategory(categoryId)
+    this.promotionService
+      .analyzeCategory(categoryId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (analysis) => {
@@ -362,7 +415,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error analyzing category:', error);
           this.analyzingCategory = false;
-        }
+        },
       });
   }
 
@@ -382,22 +435,8 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     this.selectedPromotion = null;
   }
 
-  // AI recommendations
-  loadAIRecommendations(): void {
-    this.aiLoading = true;
-    this.aiPromotionService.getAIRecommendations()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (recommendations) => {
-          this.aiRecommendations = recommendations;
-          this.aiLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading AI recommendations:', error);
-          this.aiLoading = false;
-        }
-      });
-  }
+  // AI recommendations - This method was removed to avoid duplication
+  // The async loadAIRecommendations method above handles AI recommendations
 
   toggleAIInsights(): void {
     this.showAIInsightsModal = !this.showAIInsightsModal;
@@ -412,7 +451,9 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // Utility methods
   getPromotionCardClass(promotion: Promotion): string {
-    return this.promotionService.getPromotionCardColor(promotion.discount_percentage);
+    return this.promotionService.getPromotionCardColor(
+      promotion.discount_percentage
+    );
   }
 
   formatCurrency(amount: string | number): string {
@@ -423,9 +464,14 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     return this.promotionService.formatPercentage(percentage);
   }
 
-  calculateSavings(priceBefore: string | number, priceAfter: string | number): number {
-    const before = typeof priceBefore === 'string' ? parseFloat(priceBefore) : priceBefore;
-    const after = typeof priceAfter === 'string' ? parseFloat(priceAfter) : priceAfter;
+  calculateSavings(
+    priceBefore: string | number,
+    priceAfter: string | number
+  ): number {
+    const before =
+      typeof priceBefore === 'string' ? parseFloat(priceBefore) : priceBefore;
+    const after =
+      typeof priceAfter === 'string' ? parseFloat(priceAfter) : priceAfter;
     return before - after;
   }
 

@@ -3,6 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Stock, Article } from '../models/article.model';
 
+interface StockStatistics {
+  totalStockEntries: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  totalQuantity: number;
+  totalValue: number;
+  averageValue: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -19,7 +28,9 @@ export class StockService {
 
   // Get all stocks
   getAll(): Observable<Stock[]> {
-    return this.http.get<Stock[]>(this.apiUrl);
+    const stocks = this.http.get<Stock[]>(this.apiUrl);
+    console.log(stocks);
+    return stocks;
   }
 
   // Get stock by ID
@@ -69,5 +80,10 @@ export class StockService {
   // Clear all stocks
   clearAll(): Observable<any> {
     return this.http.delete(`${this.apiUrl}/clear-all`);
+  }
+
+  // Get stock statistics
+  getStatistics(): Observable<StockStatistics> {
+    return this.http.get<StockStatistics>(`${this.apiUrl}/statistics`);
   }
 }

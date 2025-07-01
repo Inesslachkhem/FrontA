@@ -218,11 +218,11 @@ import { ArticleService } from '../../services/article.service';
               <tr *ngFor="let stock of filteredStocks" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900">
-                    {{ stock.article?.libelle || 'Loading...' }}
+                    {{ stock.articleId }}
                   </div>
-                  <div class="text-sm text-gray-500">
+                  <!-- <div class="text-sm text-gray-500">
                     Code: {{ stock.article?.codeArticle }}
-                  </div>
+                  </div> -->
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900">
@@ -535,13 +535,12 @@ export class StockListComponent implements OnInit {
     this.stockService.getAll().subscribe({
       next: (stocks) => {
         // Mettre à jour la valeur du stock pour chaque élément
-        this.stocks = stocks.map(stock => {
-          const article = this.articles.find(a => a.id === stock.articleId);
-          if (article) {
-            stock.valeur_Stock_TND = this.stockService.calculateStockValue(stock, article);
-          }
+        this.stocks = stocks.map((stock) => {
+          this.articles.find((a) => a.id === stock.articleId);
+
           return stock;
         });
+        console.log(stocks);
         this.calculateCounts();
         this.filterStocks();
       },
@@ -636,9 +635,15 @@ export class StockListComponent implements OnInit {
   saveStock() {
     // Calculer la valeur du stock avant de sauvegarder
     if (this.currentStock.articleId) {
-      const article = this.articles.find(a => a.id === this.currentStock.articleId);
+      const article = this.articles.find(
+        (a) => a.id === this.currentStock.articleId
+      );
       if (article) {
-        this.currentStock.valeur_Stock_TND = this.stockService.calculateStockValue(this.currentStock as Stock, article);
+        this.currentStock.valeur_Stock_TND =
+          this.stockService.calculateStockValue(
+            this.currentStock as Stock,
+            article
+          );
       }
     }
 
