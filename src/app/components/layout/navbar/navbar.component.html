@@ -1,27 +1,10 @@
 <!-- Top Navbar -->
-<nav class="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+<nav
+  class="w-full bg-white h-[7.68vh] dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+>
   <div class="flex items-center justify-between px-4 sm:px-6 py-3">
     <!-- Left Side - Mobile Menu Toggle & Page Title -->
     <div class="flex items-center space-x-3">
-      <!-- Mobile Menu Toggle Button -->
-      <button
-        (click)="toggleMobileSidebar()"
-        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-        title="Toggle sidebar"
-      >
-        <i class="fas fa-bars text-lg"></i>
-      </button>
-      
-      <!-- Desktop Sidebar Toggle Button -->
-      <button
-        (click)="toggleDesktopSidebar()"
-        class="hidden md:block p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-        title="Toggle sidebar"
-      >
-        <i class="fas fa-bars text-lg"></i>
-      </button>
-
-      <!-- Page Title -->
       <h1
         class="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate"
       >
@@ -29,7 +12,6 @@
       </h1>
     </div>
 
-    <!-- Right Side - Actions -->
     <div class="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
       <!-- Search Bar (Hidden on small screens) -->
       <div class="hidden lg:block">
@@ -80,7 +62,7 @@
             *ngIf="unreadCount > 0"
             class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
           >
-            {{ unreadCount > 9 ? '9+' : unreadCount }}
+            {{ unreadCount > 9 ? "9+" : unreadCount }}
           </span>
         </button>
 
@@ -218,12 +200,14 @@
   </div>
 
   <!-- Mobile Search Bar (Collapsible) -->
-  <div 
-    *ngIf="isMobileSearchOpen" 
+  <div
+    *ngIf="isMobileSearchOpen"
     class="lg:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-3 animate-slide-down"
   >
     <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <div
+        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+      >
         <i class="fas fa-search text-gray-400"></i>
       </div>
       <input
