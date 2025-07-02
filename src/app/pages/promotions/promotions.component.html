@@ -458,14 +458,30 @@
           >Select Category</label
         >
         <select
-          [(ngModel)]="selectedCategoryId"
+          [(ngModel)]="selectedCategory"
+          (change)="onCategoryChange($event)"
           class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
         >
           <option value="">Choose a category...</option>
-          <option *ngFor="let category of categories" [value]="category.id">
-            {{ category.name }}
+          <option *ngFor="let category of aiCategories" [value]="category.name">
+            {{ category.name }} ({{ category.product_count }} products)
           </option>
         </select>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Promotion Start Date</label
+        >
+        <input
+          type="date"
+          [(ngModel)]="startDate"
+          class="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+          [min]="getTodayDate()"
+        />
+        <p class="text-xs text-gray-500 mt-1">
+          Select when the promotions should start (minimum: today)
+        </p>
       </div>
 
       <div class="bg-blue-50 rounded-xl p-4 mb-6">
@@ -473,6 +489,7 @@
         <ul class="text-sm text-blue-800 space-y-1">
           <li>• AI analyzes sales data and trends</li>
           <li>• Calculates optimal discount percentages</li>
+          <li>• Schedules promotions from selected start date</li>
           <li>• Maintains profitable margins</li>
           <li>• Projects revenue impact</li>
         </ul>
@@ -487,8 +504,8 @@
           Cancel
         </button>
         <button
-          (click)="generatePromotions()"
-          [disabled]="!selectedCategoryId || generating"
+          (click)="generateAIPromotions()"
+          [disabled]="!selectedCategory || !startDate || generating"
           class="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span *ngIf="!generating">
@@ -805,6 +822,168 @@
         >
           <i class="fas fa-edit mr-2"></i>
           Edit Promotion
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Promotion Results Modal -->
+<div
+  *ngIf="showPromotionModal"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+  (click)="closePromotionModal()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Modal Header -->
+    <div class="bg-gradient-to-r from-green-600 to-green-700 p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold">AI Promotion Recommendations</h2>
+          <p class="text-green-100 mt-1">
+            Generated {{ promotionResults?.recommendations?.length || 0 }} smart
+            promotions
+          </p>
+        </div>
+        <button
+          (click)="closePromotionModal()"
+          class="text-white hover:text-gray-200"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6" *ngIf="promotionResults">
+      <!-- Summary Statistics -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-blue-50 rounded-lg p-4">
+          <div class="text-blue-600 text-sm font-medium">
+            Total Recommendations
+          </div>
+          <div class="text-2xl font-bold text-blue-800">
+            {{ promotionResults.recommendations.length || 0 }}
+          </div>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4">
+          <div class="text-green-600 text-sm font-medium">Average Discount</div>
+          <div class="text-2xl font-bold text-green-800">
+            {{ promotionResults.summary.avg_discount || 0 | number : "1.0-0" }}%
+          </div>
+        </div>
+        <div class="bg-purple-50 rounded-lg p-4">
+          <div class="text-purple-600 text-sm font-medium">Category</div>
+          <div class="text-lg font-bold text-purple-800">
+            {{ selectedCategory }}
+          </div>
+        </div>
+        <div class="bg-orange-50 rounded-lg p-4">
+          <div class="text-orange-600 text-sm font-medium">Start Date</div>
+          <div class="text-lg font-bold text-orange-800">
+            {{ startDate | date : "mediumDate" }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Promotion Recommendations -->
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          Recommended Promotions
+        </h3>
+
+        <div
+          *ngFor="let recommendation of promotionResults.recommendations"
+          class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 mb-2">
+                {{ recommendation.product_name }}
+              </h4>
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-500">Current Price:</span>
+                  <div class="font-semibold">
+                    ${{ recommendation.current_price | number : "1.2-2" }}
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">Suggested Discount:</span>
+                  <div class="font-semibold text-orange-600">
+                    {{ recommendation.suggested_discount | number : "1.0-0" }}%
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">New Price:</span>
+                  <div class="font-semibold text-green-600">
+                    ${{ recommendation.discounted_price | number : "1.2-2" }}
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">Expected Revenue:</span>
+                  <div class="font-semibold text-blue-600">
+                    ${{
+                      recommendation.expected_revenue_increase
+                        | number : "1.2-2"
+                    }}
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">Confidence:</span>
+                  <div class="font-semibold">
+                    {{ recommendation.confidence | number : "1.0-0" }}%
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="mt-3 p-3 bg-green-50 rounded-lg border border-green-200"
+              >
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-green-700 font-medium"
+                    >Customer Savings:</span
+                  >
+                  <span class="text-green-800 font-bold">
+                    ${{
+                      calculateSavingsAmount(
+                        recommendation.current_price,
+                        recommendation.discounted_price
+                      ) | number : "1.2-2"
+                    }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-2 text-sm text-gray-600">
+                <strong>Expected Impact:</strong> {{ recommendation.reasoning }}
+              </div>
+
+              <div class="mt-2 text-sm text-gray-600">
+                <strong>Sales Lift:</strong>
+                {{ recommendation.predicted_sales_lift | number : "1.0-0" }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-6 border-t border-gray-200 mt-6">
+        <button
+          (click)="closePromotionModal()"
+          class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition-all duration-200 font-medium"
+        >
+          Close
+        </button>
+        <button
+          class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium"
+        >
+          <i class="fas fa-check mr-2"></i>
+          Apply Recommendations
         </button>
       </div>
     </div>

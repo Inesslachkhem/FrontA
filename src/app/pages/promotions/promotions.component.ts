@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, Observable } from 'rxjs';
 import { PromotionService } from '../../services/promotion.service';
 import {
-  AIPromotionService,
-  AIRecommendation,
-  AIRecommendationResponse,
-} from '../../services/ai-promotion.service';
+  PromotionAiService,
+  PromotionCategory,
+  PromotionRecommendation,
+  PromotionGenerationResponse,
+  CategoriesResponse,
+} from '../../services/promotion-ai.service';
 import {
   Promotion,
   PromotionStats,
@@ -42,11 +44,13 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     projected_revenue_increase: 0,
   };
 
-  // AI recommendations
-  aiRecommendations: Map<number, AIRecommendationResponse> = new Map();
-  showAIRecommendations = true;
-  aiLoading = false;
-  aiError: string | null = null;
+  // AI Categories and selected category
+  aiCategories: PromotionCategory[] = [];
+  selectedCategory: string = '';
+
+  // AI Generation results
+  promotionResults: PromotionGenerationResponse | null = null;
+  showPromotionModal = false;
 
   // UI state
   loading = false;
@@ -66,6 +70,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Generation
   selectedCategoryId: string | null = null;
   generating = false;
+  startDate: string = new Date().toISOString().split('T')[0]; // Default to today
 
   // Analysis
   analysisData: PromotionAnalysis[] = [];
@@ -90,13 +95,13 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   constructor(
     private promotionService: PromotionService,
-    private aiPromotionService: AIPromotionService
+    private promotionAiService: PromotionAiService
   ) {}
 
   ngOnInit(): void {
     this.loadPromotions();
     this.loadCategories();
-    this.checkAIService();
+    this.loadAICategories();
   }
 
   ngOnDestroy(): void {
@@ -105,147 +110,61 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   }
 
   // AI Methods
-  checkAIService(): void {
-    this.aiPromotionService
-      .checkHealth()
+  loadAICategories(): void {
+    this.promotionAiService
+      .getCategories()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
+        next: (response: CategoriesResponse) => {
+          this.aiCategories = response.categories;
+          if (this.aiCategories.length > 0) {
+            this.selectedCategory = this.aiCategories[0].name;
+          }
           console.log('AI service is available');
         },
-        error: (error) => {
+        error: (error: any) => {
           console.warn('AI service unavailable:', error);
-          this.showAIRecommendations = false;
         },
       });
   }
 
-  async loadAIRecommendations(): Promise<void> {
-    if (!this.showAIRecommendations || this.promotions.length === 0) {
+  // Generate AI Promotions
+  generateAIPromotions(): void {
+    if (!this.selectedCategory || !this.startDate) {
       return;
     }
 
-    this.aiLoading = true;
-    this.aiError = null;
+    this.generating = true;
 
-    try {
-      // Prepare products data for batch AI analysis
-      const productsData = this.promotions
-        .slice(0, 10)
-        .map((promotion) => this.prepareProductDataForAI(promotion));
+    this.promotionAiService
+      .generatePromotions(this.selectedCategory, this.startDate)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: PromotionGenerationResponse) => {
+          this.promotionResults = response;
+          this.showPromotionModal = true;
+          this.generating = false;
+          this.closeGenerateModal();
 
-      // Use getBatchRecommendations instead of individual calls
-      const batchRecommendations = await this.aiPromotionService
-        .getBatchRecommendations(productsData, 10)
-        .toPromise();
-
-      if (batchRecommendations?.recommendations) {
-        batchRecommendations.recommendations.forEach(
-          (rec: any, index: number) => {
-            const promotion = this.promotions[index];
-            if (promotion?.id !== undefined) {
-              this.aiRecommendations.set(promotion.id!, rec);
-            }
-          }
-        );
-      }
-    } catch (error) {
-      this.aiError = 'Failed to load AI recommendations';
-      console.error('AI recommendations error:', error);
-
-      // Fallback to individual recommendations if batch fails
-      try {
-        for (const promotion of this.promotions.slice(0, 5)) {
-          // Limit to first 5 for fallback
-          try {
-            const productData = this.prepareProductDataForAI(promotion);
-            const aiRecommendation = await this.aiPromotionService
-              .getPromotionRecommendation(productData)
-              .toPromise();
-            if (aiRecommendation && promotion.id !== undefined) {
-              this.aiRecommendations.set(promotion.id, aiRecommendation);
-            }
-          } catch (error) {
-            console.error(
-              'Failed to get AI recommendation for promotion',
-              promotion.id,
-              error
-            );
-          }
-        }
-      } catch (fallbackError) {
-        console.error(
-          'Fallback AI recommendations also failed:',
-          fallbackError
-        );
-      }
-    } finally {
-      this.aiLoading = false;
-    }
+          // Reload promotions to show any new ones
+          this.loadPromotions();
+        },
+        error: (error: any) => {
+          console.error('Error generating promotions:', error);
+          this.generating = false;
+        },
+      });
   }
 
-  prepareProductDataForAI(promotion: Promotion): any {
-    return {
-      product_id: promotion.id,
-      product_name: promotion.product_name,
-      current_price: parseFloat(promotion.price_before) || 100, // Use price_before instead of original_price
-      current_stock: 50, // Default - would come from actual product data
-      total_sales_90d: 25, // Default - would come from sales analytics
-      total_revenue_90d: (parseFloat(promotion.price_before) || 100) * 25,
-      total_purchased_90d: 75,
-      sales_last_30d: 8,
-      sales_previous_30d: 10,
-      days_since_last_promo: this.calculateDaysSinceLastPromo(promotion),
-      last_promo_discount: parseFloat(promotion.discount_percentage), // Use discount_percentage instead of discount_rate
-      promo_count_6months: 1,
-      category_id: 1, // Default category_id since it's not in the Promotion interface
-    };
+  // Close promotion modal
+  closePromotionModal(): void {
+    this.showPromotionModal = false;
+    this.promotionResults = null;
   }
 
-  calculateDaysSinceLastPromo(promotion: Promotion): number {
-    if (promotion.end_date) {
-      const endDate = new Date(promotion.end_date);
-      const now = new Date();
-      return Math.floor(
-        (now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-    }
-    return 365; // Default if no end date
-  }
-
-  getAIRecommendation(promotionId: number): AIRecommendationResponse | null {
-    return this.aiRecommendations.get(promotionId) || null;
-  }
-
-  getConfidenceClass(confidence: number): string {
-    return this.aiPromotionService.getConfidenceClass(confidence);
-  }
-
-  getRiskClass(riskLevel: string): string {
-    return this.aiPromotionService.getRiskClass(riskLevel);
-  }
-
-  formatPercent(value: number): string {
-    return this.aiPromotionService.formatPercent(value);
-  }
-
-  // formatCurrency method removed to avoid duplication - using the one below that handles both string and number
-
-  showAIInsights(): void {
-    this.showAIInsightsModal = true;
-  }
-
-  closeAIInsights(): void {
-    this.showAIInsightsModal = false;
-  }
-
-  toggleAIRecommendations(): void {
-    this.showAIRecommendations = !this.showAIRecommendations;
-    if (this.showAIRecommendations) {
-      this.loadAIRecommendations();
-    } else {
-      this.aiRecommendations.clear();
-    }
+  // Category selection change
+  onCategorySelect(category: string): void {
+    this.selectedCategory = category;
   }
 
   // Data loading methods
@@ -397,33 +316,40 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Promotion generation
   openGenerateModal(): void {
     this.showGenerateModal = true;
-    this.selectedCategoryId = null;
   }
 
   closeGenerateModal(): void {
     this.showGenerateModal = false;
     this.selectedCategoryId = null;
+    // Reset to today's date when closing modal
+    this.startDate = new Date().toISOString().split('T')[0];
   }
 
+  // Generate promotions (fallback method - using AI if selectedCategory is available)
   generatePromotions(): void {
-    if (!this.selectedCategoryId) return;
+    if (this.selectedCategory) {
+      // Use AI generation if category is selected from AI categories
+      this.generateAIPromotions();
+      return;
+    }
+
+    if (!this.selectedCategoryId) {
+      return;
+    }
 
     this.generating = true;
-    this.promotionService
-      .generatePromotions(this.selectedCategoryId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (result) => {
-          console.log('Promotions generated:', result);
-          this.generating = false;
-          this.closeGenerateModal();
-          this.loadPromotions(); // Refresh the list
-        },
-        error: (error) => {
-          console.error('Error generating promotions:', error);
-          this.generating = false;
-        },
-      });
+
+    // For backward compatibility, you could add a basic promotion generation here
+    // For now, we'll just close the modal and suggest using AI
+    console.log('Use AI generation for better results');
+    this.generating = false;
+    this.closeGenerateModal();
+  }
+
+  // Category selection change
+  onCategoryChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedCategory = target.value;
   }
 
   // Category analysis
@@ -466,9 +392,6 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   toggleAIInsights(): void {
     this.showAIInsightsModal = !this.showAIInsightsModal;
-    if (this.showAIInsightsModal) {
-      this.loadAIRecommendations();
-    }
   }
 
   closeAIInsightsModal(): void {
@@ -652,6 +575,23 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     return before - after;
   }
 
+  // Calculate savings amount
+  calculateSavingsAmount(
+    currentPrice: number,
+    discountedPrice: number
+  ): number {
+    return currentPrice - discountedPrice;
+  }
+
+  // Calculate savings percentage (for display)
+  calculateSavingsPercentage(
+    currentPrice: number,
+    discountedPrice: number
+  ): number {
+    if (currentPrice === 0) return 0;
+    return ((currentPrice - discountedPrice) / currentPrice) * 100;
+  }
+
   isPromotionExpired(endDate: string): boolean {
     return new Date(endDate) <= new Date();
   }
@@ -682,5 +622,10 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // TrackBy function for better performance
   trackByPromotionId(index: number, promotion: Promotion): any {
     return promotion.id || promotion.code_article;
+  }
+
+  // Utility method to get today's date
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
   }
 }
