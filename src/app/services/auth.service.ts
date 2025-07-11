@@ -120,6 +120,10 @@ export class AuthService {
       );
   }
 
+  resendCode(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/User/resend-code`, { email });
+  }
+
   isTokenValid(): boolean {
     const token = this.tokenValue;
     if (!token) return false;

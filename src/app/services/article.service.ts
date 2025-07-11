@@ -48,6 +48,14 @@ export class ArticleService {
     return this.http.get(`${this.apiUrl}/debug/categories-count`);
   }
 
+  // Auto-create missing categories
+  autoCreateMissingCategories(categoryNames: string[]): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/auto-create-categories`,
+      categoryNames
+    );
+  }
+
   testCsvParsing(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);

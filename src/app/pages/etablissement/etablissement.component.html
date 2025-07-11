@@ -15,7 +15,7 @@
       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
     >
       <i class="fas fa-plus"></i>
-      <span>Add Etablissement</span>
+      <span>Ajouter Etablissement</span>
     </button>
   </div>
 
@@ -185,118 +185,192 @@
   </div>
 </div>
 
-<!-- Modal -->
-<div
-  *ngIf="isModalOpen"
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
->
+<!-- Modal Template -->
+<ng-template #etablissementModalTemplate>
   <div
-    class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+    class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-5xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
   >
-    <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-      {{ isEditMode ? "Edit Etablissement" : "Add New Etablissement" }}
-    </h3>
-
-    <form (ngSubmit)="saveEtablissement()" class="space-y-4">
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Code</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="currentEtablissement.code"
-          name="code"
-          required
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
+    <!-- Modal Header - Title Section -->
+    <div
+      class="w-full px-8 py-8 text-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
+    >
+      <div class="flex flex-col items-center space-y-4">
+        <div class="p-4 bg-blue-100 dark:bg-blue-900 rounded-full">
+          <i
+            class="fas fa-building text-blue-600 dark:text-blue-300 text-3xl"
+          ></i>
+        </div>
+        <div>
+          <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {{
+              isEditMode ? "Modifier Etablissement" : "Ajouter Etablissement"
+            }}
+          </h3>
+          <p class="text-base text-gray-600 dark:text-gray-300 max-w-md">
+            {{
+              isEditMode
+                ? "Modifiez les informations de l'établissement ci-dessous"
+                : "Créez un nouvel établissement en remplissant tous les champs requis"
+            }}
+          </p>
+        </div>
       </div>
+    </div>
 
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Libelle</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="currentEtablissement.libelle"
-          name="libelle"
-          required
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-      </div>
+    <!-- Modal Body - Form Section -->
+    <div class="flex-1 w-full px-8 py-8 max-h-[60vh] overflow-y-auto">
+      <form (ngSubmit)="saveEtablissement()" class="w-full">
+        <div class="flex flex-col space-y-8">
+          <!-- Section: Informations de base -->
+          <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+            <h4
+              class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+            >
+              <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+              Informations de base
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Code <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="currentEtablissement.code"
+                  name="code"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                  placeholder="Ex: ETB001"
+                />
+              </div>
 
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Address</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="currentEtablissement.adresse"
-          name="adresse"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-      </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Libellé <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="currentEtablissement.libelle"
+                  name="libelle"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                  placeholder="Nom de l'établissement"
+                />
+              </div>
+            </div>
+          </div>
 
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >City</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="currentEtablissement.ville"
-          name="ville"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-      </div>
+          <!-- Section: Localisation -->
+          <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+            <h4
+              class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+            >
+              <i class="fas fa-map-marker-alt text-green-500 mr-2"></i>
+              Localisation
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Adresse
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="currentEtablissement.adresse"
+                  name="adresse"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                  placeholder="Adresse complète"
+                />
+              </div>
 
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Type</label
-        >
-        <select
-          [(ngModel)]="currentEtablissement.type"
-          name="type"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        >
-          <option value="">Select Type</option>
-          <option value="MAGASIN">MAGASIN</option>
-          <option value="DEPOT">DEPOT</option>
-          <option value="AUTRE">AUTRE</option>
-        </select>
-      </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Ville
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="currentEtablissement.ville"
+                  name="ville"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                  placeholder="Ville"
+                />
+              </div>
+            </div>
+          </div>
 
-      <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Secteur</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="currentEtablissement.secteur"
-          name="secteur"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-      </div>
+          <!-- Section: Caractéristiques -->
+          <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+            <h4
+              class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+            >
+              <i class="fas fa-cogs text-purple-500 mr-2"></i>
+              Caractéristiques
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Type
+                </label>
+                <select
+                  [(ngModel)]="currentEtablissement.type"
+                  name="type"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                >
+                  <option value="">Sélectionner un type</option>
+                  <option value="MAGASIN">MAGASIN</option>
+                  <option value="DEPOT">DEPOT</option>
+                  <option value="AUTRE">AUTRE</option>
+                </select>
+              </div>
 
-      <div class="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          (click)="closeModal()"
-          class="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-        >
-          {{ isEditMode ? "Update" : "Create" }}
-        </button>
-      </div>
-    </form>
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Secteur
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="currentEtablissement.secteur"
+                  name="secteur"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                  placeholder="Secteur d'activité"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+            <div class="flex justify-end space-x-4">
+              <button
+                type="button"
+                (click)="closeModal()"
+                class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+              >
+                <i class="fas fa-times mr-2"></i>
+                Annuler
+              </button>
+              <button
+                type="submit"
+                class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2"
+              >
+                <i class="fas fa-save"></i>
+                <span>{{ isEditMode ? "Modifier" : "Créer" }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
+</ng-template>

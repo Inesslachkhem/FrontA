@@ -1,17 +1,28 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  TemplateRef,
+  ViewChild,
+  ViewContainerRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { DepotService } from '../../services/depot.service';
+import { ModalService } from '../../services/modal.service';
 import { Depot } from '../../models/article.model';
 
 @Component({
   selector: 'app-department',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OverlayModule],
   templateUrl: './department.component.html',
   styleUrl: './department.component.css',
 })
 export class DepartmentComponent implements OnInit {
+  @ViewChild('depotModalTemplate', { static: true })
+  depotModalTemplate!: TemplateRef<any>;
+
   depots: Depot[] = [];
   filteredDepots: Depot[] = [];
   loading = false;
@@ -22,10 +33,21 @@ export class DepartmentComponent implements OnInit {
   isEditMode = false;
   currentDepot: Partial<Depot> = {};
 
+  // Modal animation states
+  isClosingModal = false;
+
   // File upload
   selectedFile: File | null = null;
 
-  constructor(private depotService: DepotService) {}
+  // Messages
+  message = '';
+  messageType: 'success' | 'error' = 'success';
+
+  constructor(
+    private depotService: DepotService,
+    private modalService: ModalService,
+    private viewContainerRef: ViewContainerRef
+  ) {}
 
   ngOnInit() {
     this.loadDepots();
@@ -59,7 +81,6 @@ export class DepartmentComponent implements OnInit {
   }
 
   openModal(depot?: Depot) {
-    this.isModalOpen = true;
     if (depot) {
       this.isEditMode = true;
       this.currentDepot = { ...depot };
@@ -67,11 +88,19 @@ export class DepartmentComponent implements OnInit {
       this.isEditMode = false;
       this.currentDepot = {};
     }
+    this.modalService.openModal(this.depotModalTemplate, this.viewContainerRef);
   }
 
   closeModal() {
-    this.isModalOpen = false;
-    this.currentDepot = {};
+    this.isClosingModal = true;
+    this.modalService.closeModal();
+
+    setTimeout(() => {
+      this.isModalOpen = false;
+      this.isEditMode = false;
+      this.currentDepot = {};
+      this.isClosingModal = false;
+    }, 300);
   }
 
   saveDepot() {
@@ -82,18 +111,34 @@ export class DepartmentComponent implements OnInit {
           next: () => {
             this.loadDepots();
             this.closeModal();
+            this.showMessage('Depot updated successfully', 'success');
           },
-          error: (error) => console.error('Error updating depot:', error),
+          error: (error) => {
+            console.error('Error updating depot:', error);
+            this.showMessage('Error updating depot', 'error');
+          },
         });
     } else {
       this.depotService.create(this.currentDepot as Depot).subscribe({
         next: () => {
           this.loadDepots();
           this.closeModal();
+          this.showMessage('Depot created successfully', 'success');
         },
-        error: (error) => console.error('Error creating depot:', error),
+        error: (error) => {
+          console.error('Error creating depot:', error);
+          this.showMessage('Error creating depot', 'error');
+        },
       });
     }
+  }
+
+  showMessage(message: string, type: 'success' | 'error') {
+    this.message = message;
+    this.messageType = type;
+    setTimeout(() => {
+      this.message = '';
+    }, 5000);
   }
 
   deleteDepot(id: number) {

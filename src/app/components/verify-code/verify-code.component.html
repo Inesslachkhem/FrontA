@@ -1,33 +1,329 @@
-<div class="verify-code-container">
-  <div class="verify-code-box">
-    <h2>Enter Verification Code</h2>
-    <p>Please enter the verification code sent to your email: {{email}}</p>
+<div
+  class="min-h-screen relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden page-entrance"
+>
+  <!-- Toast Notification -->
+  <div
+    *ngIf="showToast"
+    class="fixed top-6 right-6 z-50 max-w-sm w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl transform transition-all duration-300 ease-out"
+    [ngClass]="{
+      'translate-x-0': showToast,
+      'translate-x-full': !showToast
+    }"
+    style="animation: slideIn 0.3s ease-out"
+  >
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <!-- Success icon -->
+        <svg
+          *ngIf="toastType === 'success'"
+          class="h-6 w-6 text-green-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <!-- Error icon -->
+        <svg
+          *ngIf="toastType === 'error'"
+          class="h-6 w-6 text-red-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <!-- Info icon -->
+        <svg
+          *ngIf="toastType === 'info'"
+          class="h-6 w-6 text-blue-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+      <div class="ml-3 w-0 flex-1">
+        <p
+          class="text-sm font-medium"
+          [ngClass]="{
+            'text-green-200': toastType === 'success',
+            'text-red-200': toastType === 'error',
+            'text-blue-200': toastType === 'info'
+          }"
+        >
+          {{ toastMessage }}
+        </p>
+      </div>
+      <div class="ml-4 flex-shrink-0 flex">
+        <button
+          class="rounded-md inline-flex text-gray-400 hover:text-white focus:outline-none transition-colors duration-200"
+          (click)="hideToast()"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Animated background elements -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"
+    ></div>
+    <div
+      class="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"
+    ></div>
+    <div
+      class="absolute top-40 left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"
+    ></div>
+  </div>
 
-    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <input 
-          type="text" 
-          formControlName="code"
-          placeholder="Enter 6-digit code"
-          [maxLength]="6"
-          class="form-control">
-        
-        <div *ngIf="verifyForm.get('code')?.errors && verifyForm.get('code')?.touched" class="error-message">
-          <div *ngIf="verifyForm.get('code')?.errors?.['required']">Verification code is required</div>
-          <div *ngIf="verifyForm.get('code')?.errors?.['minlength'] || verifyForm.get('code')?.errors?.['maxlength']">
-            Code must be 6 digits
+  <!-- Grid pattern overlay -->
+  <div class="absolute inset-0 bg-grid-white/[0.02] bg-grid-16"></div>
+
+  <!-- Main container -->
+  <div class="relative z-10 max-w-lg w-full">
+    <!-- Glassmorphism card -->
+    <div
+      class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 space-y-8 transform hover:scale-[1.02] transition-all duration-300 card-entrance animate-pulse-glow"
+    >
+      <!-- Header section -->
+      <div class="text-center stagger-1">
+        <!-- Icon container with glow effect -->
+        <div class="relative mx-auto w-20 h-20 mb-6 animate-floating">
+          <div
+            class="absolute inset-0 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl blur-lg opacity-60 animate-pulse-glow"
+          ></div>
+          <div
+            class="relative bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl flex items-center justify-center h-full w-full micro-bounce"
+          >
+            <svg
+              class="h-10 w-10 text-white icon-bounce"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
           </div>
         </div>
+
+        <h1
+          class="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3 text-shimmer"
+        >
+          Vérification
+        </h1>
+        <h2 class="text-xl font-semibold text-white/90 mb-2">
+          Code de sécurité
+        </h2>
+        <p class="text-gray-300 text-sm">
+          Nous avons envoyé un code de vérification à
+        </p>
+        <p class="text-blue-300 text-sm font-medium mt-1 break-all">
+          {{ email }}
+        </p>
       </div>
 
-      <div *ngIf="error" class="alert alert-danger">
-        {{error}}
-      </div>
+      <!-- Verification form -->
+      <form
+        [formGroup]="verifyForm"
+        (ngSubmit)="onSubmit()"
+        class="space-y-6 stagger-2"
+      >
+        <!-- Code input section -->
+        <div class="space-y-4 stagger-3">
+          <label class="block text-center text-sm font-medium text-white/80">
+            Entrez le code à 6 chiffres
+          </label>
 
-      <button type="submit" [disabled]="loading || verifyForm.invalid" class="btn btn-primary">
-        <span *ngIf="loading" class="spinner"></span>
-        Verify Code
-      </button>
-    </form>
+          <!-- Paste hint -->
+          <div class="text-center">
+            <p class="text-xs text-gray-400 mb-3">
+              💡 Astuce: Vous pouvez coller le code directement
+            </p>
+          </div>
+
+          <!-- Individual digit inputs -->
+          <div class="flex justify-center space-x-3">
+            <input
+              #digit1
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 1)"
+              (keydown)="onKeyDown($event, 1)"
+              (paste)="onPaste($event, 1)"
+            />
+            <input
+              #digit2
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 2)"
+              (keydown)="onKeyDown($event, 2)"
+              (paste)="onPaste($event, 2)"
+            />
+            <input
+              #digit3
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 3)"
+              (keydown)="onKeyDown($event, 3)"
+              (paste)="onPaste($event, 3)"
+            />
+            <input
+              #digit4
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 4)"
+              (keydown)="onKeyDown($event, 4)"
+              (paste)="onPaste($event, 4)"
+            />
+            <input
+              #digit5
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 5)"
+              (keydown)="onKeyDown($event, 5)"
+              (paste)="onPaste($event, 5)"
+            />
+            <input
+              #digit6
+              type="text"
+              maxlength="1"
+              class="w-12 h-14 text-center text-2xl font-bold bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:bg-white/15 input-focus-animation"
+              (input)="onDigitInput($event, 6)"
+              (keydown)="onKeyDown($event, 6)"
+              (paste)="onPaste($event, 6)"
+            />
+          </div>
+
+          <!-- Hidden form control for validation -->
+          <input type="hidden" formControlName="code" />
+        </div>
+
+        <!-- Error message -->
+        <div
+          *ngIf="error"
+          class="bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl backdrop-blur-sm animate-shake error-pulse stagger-4"
+        >
+          <div class="flex items-center">
+            <svg
+              class="h-5 w-5 text-red-400 mr-2 micro-bounce"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span class="text-sm">{{ error }}</span>
+          </div>
+        </div>
+
+        <!-- Submit button -->
+        <button
+          type="submit"
+          [disabled]="loading || verifyForm.invalid"
+          class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl button-morph gradient-animated stagger-5"
+        >
+          <span
+            class="absolute left-0 inset-y-0 flex items-center pl-3"
+            *ngIf="loading"
+          >
+            <div
+              class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"
+            ></div>
+          </span>
+          <span class="flex items-center">
+            <svg
+              *ngIf="!loading"
+              class="h-5 w-5 mr-2 micro-bounce"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            {{ loading ? "Vérification en cours..." : "Vérifier le code" }}
+          </span>
+        </button>
+
+        <!-- Additional actions -->
+        <div class="text-center space-y-4 stagger-5">
+          <div class="text-xs text-gray-400">
+            Vous n'avez pas reçu le code ?
+          </div>
+          <button
+            type="button"
+            [disabled]="resendLoading"
+            class="text-sm text-blue-300 hover:text-blue-200 underline transition-colors duration-200 micro-bounce disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
+            (click)="resendCode()"
+          >
+            <span
+              *ngIf="resendLoading"
+              class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-300 mr-2"
+            ></span>
+            {{ resendLoading ? "Renvoi en cours..." : "Renvoyer le code" }}
+          </button>
+
+          <div class="border-t border-white/20 pt-4">
+            <button
+              type="button"
+              class="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200"
+              (click)="goBack()"
+            >
+              ← Retour à la connexion
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8 stagger-5">
+      <p class="text-xs text-gray-400">
+        © 2025 SmartPromo. Sécurisé et chiffré.
+      </p>
+    </div>
   </div>
 </div>

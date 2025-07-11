@@ -76,21 +76,26 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   analysisData: PromotionAnalysis[] = [];
   analyzingCategory = false;
 
+  // Toast system
+  showToastMessage = false;
+  toastMessage = '';
+  toastType: 'success' | 'error' | 'info' = 'info';
+
   // Filter options
   statusOptions: FilterOption[] = [
-    { value: 'all', label: 'All Promotions' },
-    { value: 'pending', label: 'Pending Approval' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'rejected', label: 'Rejected' },
-    { value: 'active', label: 'Active' },
-    { value: 'expired', label: 'Expired' },
+    { value: 'all', label: 'Toutes Promotions' },
+    { value: 'pending', label: "En Attente d'Approbation" },
+    { value: 'approved', label: 'Approuvées' },
+    { value: 'rejected', label: 'Rejetées' },
+    { value: 'active', label: 'Actives' },
+    { value: 'expired', label: 'Expirées' },
   ];
 
   sortOptions: FilterOption[] = [
-    { value: 'created_at', label: 'Creation Date' },
-    { value: 'end_date', label: 'End Date' },
-    { value: 'discount_percentage', label: 'Discount %' },
-    { value: 'product_name', label: 'Product Name' },
+    { value: 'created_at', label: 'Date de Création' },
+    { value: 'end_date', label: 'Date de Fin' },
+    { value: 'discount_percentage', label: 'Remise %' },
+    { value: 'product_name', label: 'Nom du Produit' },
   ];
 
   constructor(
@@ -403,21 +408,25 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     if (!promotion.id) return;
 
     const confirmed = confirm(
-      `Are you sure you want to approve the promotion for ${promotion.product_name}?`
+      `Êtes-vous sûr de vouloir approuver la promotion pour ${promotion.product_name}?`
     );
     if (!confirmed) return;
 
     this.promotionService.approvePromotion(promotion.id).subscribe({
       next: (response) => {
         console.log('Promotion approved:', response);
-        this.showSuccessMessage(
-          `Promotion for ${promotion.product_name} has been approved successfully.`
+        this.showToast(
+          `Promotion pour ${promotion.product_name} approuvée avec succès.`,
+          'success'
         );
         this.refreshData();
       },
       error: (error) => {
         console.error('Error approving promotion:', error);
-        this.showErrorMessage('Failed to approve promotion. Please try again.');
+        this.showToast(
+          "Échec de l'approbation de la promotion. Veuillez réessayer.",
+          'error'
+        );
       },
     });
   }
@@ -426,21 +435,25 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     if (!promotion.id) return;
 
     const confirmed = confirm(
-      `Are you sure you want to reject the promotion for ${promotion.product_name}?`
+      `Êtes-vous sûr de vouloir rejeter la promotion pour ${promotion.product_name}?`
     );
     if (!confirmed) return;
 
     this.promotionService.rejectPromotion(promotion.id).subscribe({
       next: (response) => {
         console.log('Promotion rejected:', response);
-        this.showSuccessMessage(
-          `Promotion for ${promotion.product_name} has been rejected.`
+        this.showToast(
+          `Promotion pour ${promotion.product_name} rejetée.`,
+          'success'
         );
         this.refreshData();
       },
       error: (error) => {
         console.error('Error rejecting promotion:', error);
-        this.showErrorMessage('Failed to reject promotion. Please try again.');
+        this.showToast(
+          'Échec du rejet de la promotion. Veuillez réessayer.',
+          'error'
+        );
       },
     });
   }
@@ -627,5 +640,25 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   // Utility method to get today's date
   getTodayDate(): string {
     return new Date().toISOString().split('T')[0];
+  }
+
+  // Toast methods
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToastMessage = true;
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      this.hideToast();
+    }, 3000);
+  }
+
+  hideToast() {
+    this.showToastMessage = false;
+    setTimeout(() => {
+      this.toastMessage = '';
+      this.toastType = 'info';
+    }, 300);
   }
 }

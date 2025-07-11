@@ -1,19 +1,30 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  TemplateRef,
+  ViewContainerRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { EtablissementService } from '../../services/etablissement.service';
+import { ModalService } from '../../services/modal.service';
 import { Etablissement } from '../../models/article.model';
 
 @Component({
   selector: 'app-etablissement',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OverlayModule],
   templateUrl: './etablissement.component.html',
   styleUrl: './etablissement.component.css',
 })
 export class EtablissementComponent implements OnInit {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
-  
+  @ViewChild('etablissementModalTemplate', { static: true })
+  etablissementModalTemplate!: TemplateRef<any>;
+
   etablissements: Etablissement[] = [];
   filteredEtablissements: Etablissement[] = [];
   loading = false;
@@ -24,10 +35,21 @@ export class EtablissementComponent implements OnInit {
   isEditMode = false;
   currentEtablissement: Partial<Etablissement> = {};
 
+  // Modal animation states
+  isClosingModal = false;
+
   // File upload
   selectedFile: File | null = null;
 
-  constructor(private etablissementService: EtablissementService) {}
+  // Messages
+  message = '';
+  messageType: 'success' | 'error' = 'success';
+
+  constructor(
+    private etablissementService: EtablissementService,
+    private modalService: ModalService,
+    private viewContainerRef: ViewContainerRef
+  ) {}
 
   ngOnInit() {
     this.loadEtablissements();
@@ -61,7 +83,6 @@ export class EtablissementComponent implements OnInit {
   }
 
   openModal(etablissement?: Etablissement) {
-    this.isModalOpen = true;
     if (etablissement) {
       this.isEditMode = true;
       this.currentEtablissement = { ...etablissement };
@@ -69,11 +90,22 @@ export class EtablissementComponent implements OnInit {
       this.isEditMode = false;
       this.currentEtablissement = {};
     }
+    this.modalService.openModal(
+      this.etablissementModalTemplate,
+      this.viewContainerRef
+    );
   }
 
   closeModal() {
-    this.isModalOpen = false;
-    this.currentEtablissement = {};
+    this.isClosingModal = true;
+    this.modalService.closeModal();
+
+    setTimeout(() => {
+      this.isModalOpen = false;
+      this.isEditMode = false;
+      this.currentEtablissement = {};
+      this.isClosingModal = false;
+    }, 300);
   }
 
   saveEtablissement() {
@@ -87,9 +119,12 @@ export class EtablissementComponent implements OnInit {
           next: () => {
             this.loadEtablissements();
             this.closeModal();
+            this.showMessage('Etablissement updated successfully', 'success');
           },
-          error: (error) =>
-            console.error('Error updating etablissement:', error),
+          error: (error) => {
+            console.error('Error updating etablissement:', error);
+            this.showMessage('Error updating etablissement', 'error');
+          },
         });
     } else {
       this.etablissementService
@@ -98,11 +133,22 @@ export class EtablissementComponent implements OnInit {
           next: () => {
             this.loadEtablissements();
             this.closeModal();
+            this.showMessage('Etablissement created successfully', 'success');
           },
-          error: (error) =>
-            console.error('Error creating etablissement:', error),
+          error: (error) => {
+            console.error('Error creating etablissement:', error);
+            this.showMessage('Error creating etablissement', 'error');
+          },
         });
     }
+  }
+
+  showMessage(message: string, type: 'success' | 'error') {
+    this.message = message;
+    this.messageType = type;
+    setTimeout(() => {
+      this.message = '';
+    }, 5000);
   }
 
   deleteEtablissement(id: number) {
@@ -137,8 +183,8 @@ export class EtablissementComponent implements OnInit {
           },
           error: (error) => {
             console.error('Error importing etablissements:', error);
-            let errorMessage = 'Une erreur est survenue lors de l\'importation.';
-            
+            let errorMessage = "Une erreur est survenue lors de l'importation.";
+
             if (error.error) {
               if (typeof error.error === 'string') {
                 errorMessage = error.error;
@@ -148,7 +194,7 @@ export class EtablissementComponent implements OnInit {
             } else if (error.message) {
               errorMessage = error.message;
             }
-            
+
             alert(errorMessage);
             this.loading = false;
           },
