@@ -2,8 +2,8 @@
 .layout-container {
   position: relative;
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: visible;
 }
 
 /* Sidebar positioning */
@@ -21,6 +21,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Header positioning */
@@ -36,8 +37,7 @@
   position: relative;
   z-index: 10;
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  min-height: calc(100vh - 64px); /* Adjust based on navbar height */
 }
 
 /* Prevent horizontal scroll on main container */
@@ -62,8 +62,10 @@
   pointer-events: auto;
 }
 
-/* Smooth transitions */
-* {
+/* Smooth transitions for layout changes only */
+.sidebar-container,
+.main-content,
+.header-container {
   transition-property: margin, width, transform;
   transition-duration: 300ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);

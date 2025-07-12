@@ -24,29 +24,50 @@
 /* Smooth transitions */
 * {
   transition: color 0.2s ease, background-color 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Enhanced smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem;
+}
+
+/* Remove scroll behavior from reduced motion users */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom animations */
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes slideUp {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(0.95);
   }
 }
 
@@ -72,8 +93,26 @@
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 .animate-slide-down {
-  animation: slideDown 0.2s ease-out;
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-slide-up {
@@ -86,6 +125,14 @@
 
 .animate-slide-out-left {
   animation: slideOutLeft 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.2s ease-out;
 }
 
 /* Modal animation classes */
@@ -221,4 +268,21 @@
     transform: translateY(-30px) scale(0.95);
     filter: blur(2px);
   }
+}
+
+/* Ensure proper scrolling */
+html,
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100vh;
+}
+
+/* Root element should allow scrolling */
+#root,
+app-root {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
 }

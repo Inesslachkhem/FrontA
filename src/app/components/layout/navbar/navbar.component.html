@@ -1,8 +1,11 @@
 <!-- Top Navbar -->
 <nav
-  class="w-full bg-white h-[7.68vh] dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+  class="navbar-scroll-shadow w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-all duration-300"
+  [class.scrolled]="isScrolled"
 >
-  <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+  <div
+    class="navbar-container flex items-center justify-between px-4 sm:px-6 py-3"
+  >
     <!-- Left Side - Mobile Menu Toggle & Page Title -->
     <div class="flex items-center space-x-3"></div>
 
@@ -26,44 +29,50 @@
       <!-- Mobile Search Button -->
       <button
         (click)="toggleMobileSearch()"
-        class="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+        class="navbar-button lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
         [class.bg-gray-100]="isMobileSearchOpen"
         [class.dark:bg-gray-700]="isMobileSearchOpen"
         title="Search"
       >
-        <i class="fas fa-search text-lg"></i>
+        <i
+          class="fas fa-search text-lg transition-transform duration-200"
+          [class.rotate-90]="isMobileSearchOpen"
+        ></i>
       </button>
 
       <!-- Theme Toggle -->
       <button
         (click)="toggleTheme()"
-        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 flex-shrink-0"
+        class="navbar-button p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 flex-shrink-0"
         title="Toggle theme"
       >
-        <i class="fas fa-sun text-lg" *ngIf="isDarkMode"></i>
-        <i class="fas fa-moon text-lg" *ngIf="!isDarkMode"></i>
+        <i class="theme-toggle-icon fas fa-sun text-lg" *ngIf="isDarkMode"></i>
+        <i
+          class="theme-toggle-icon fas fa-moon text-lg"
+          *ngIf="!isDarkMode"
+        ></i>
       </button>
 
       <!-- Notifications -->
       <div class="relative">
         <button
           (click)="toggleNotifications()"
-          class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+          class="navbar-button relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
           title="Notifications"
         >
           <i class="fas fa-bell text-lg"></i>
           <span
             *ngIf="unreadCount > 0"
-            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
+            class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
           >
-            {{ unreadCount > 9 ? "9+" : unreadCount }}
+            {{ unreadCount }}
           </span>
         </button>
 
         <!-- Notifications Dropdown -->
         <div
           *ngIf="isNotificationOpen"
-          class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 animate-slide-down"
+          class="dropdown-menu absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
         >
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -111,10 +120,10 @@
       <div class="relative">
         <button
           (click)="toggleProfile()"
-          class="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+          class="navbar-button flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
         >
           <div
-            class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center"
+            class="profile-avatar w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center"
           >
             <span class="text-white text-sm font-semibold" *ngIf="currentUser">
               {{ currentUser.prenom.charAt(0) }}{{ currentUser.nom.charAt(0) }}
@@ -129,13 +138,16 @@
               {{ getUserTypeDisplay() }}
             </p>
           </div>
-          <i class="fas fa-chevron-down text-xs"></i>
+          <i
+            class="fas fa-chevron-down text-xs transition-transform duration-200"
+            [class.rotate-180]="isProfileOpen"
+          ></i>
         </button>
 
         <!-- Profile Dropdown Menu -->
         <div
           *ngIf="isProfileOpen"
-          class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 animate-slide-down"
+          class="dropdown-menu absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
         >
           <div
             class="p-4 border-b border-gray-200 dark:border-gray-700"
@@ -196,7 +208,7 @@
   <!-- Mobile Search Bar (Collapsible) -->
   <div
     *ngIf="isMobileSearchOpen"
-    class="lg:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-3 animate-slide-down"
+    class="mobile-search-container lg:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-3"
   >
     <div class="relative">
       <div
@@ -205,16 +217,20 @@
         <i class="fas fa-search text-gray-400"></i>
       </div>
       <input
+        id="mobileSearchInput"
         type="text"
         placeholder="Search..."
-        class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+        class="search-input bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
         (keydown.escape)="closeMobileSearch()"
+        #mobileSearchInput
       />
       <button
         (click)="closeMobileSearch()"
-        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        class="navbar-button absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
       >
-        <i class="fas fa-times"></i>
+        <i
+          class="fas fa-times transition-transform duration-200 hover:rotate-90"
+        ></i>
       </button>
     </div>
   </div>

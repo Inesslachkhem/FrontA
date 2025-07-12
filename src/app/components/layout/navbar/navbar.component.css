@@ -1,0 +1,210 @@
+/* Navbar Enhanced Animations */
+
+/* Base navbar positioning */
+nav {
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+/* Smooth dropdown animations */
+.dropdown-menu {
+  animation: slideDown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform-origin: top right;
+  pointer-events: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced mobile search transition */
+.mobile-search-container {
+  animation: mobileSearchSlide 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    forwards;
+}
+
+@keyframes mobileSearchSlide {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 100px;
+    opacity: 1;
+  }
+}
+
+/* Smooth button hover effects */
+.navbar-button {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateY(0) scale(1);
+}
+
+.navbar-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-button:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* Profile avatar animation */
+.profile-avatar {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.profile-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Notification badge animation */
+.notification-badge {
+  animation: pulse 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+/* Enhanced dropdown backdrop */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  opacity: 0;
+  background: transparent;
+  transition: opacity 0.2s ease;
+}
+
+.dropdown-backdrop.show {
+  opacity: 1;
+}
+
+/* Ensure navbar doesn't block scroll events */
+.navbar-container {
+  pointer-events: auto;
+}
+
+.navbar-container * {
+  pointer-events: auto;
+}
+
+/* Smooth transitions for all interactive elements */
+.navbar-item,
+.navbar-button,
+.dropdown-menu,
+.search-input,
+.profile-avatar,
+.theme-toggle-icon {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Specific overrides for performance */
+.dropdown-menu * {
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Enhanced search input animations */
+.search-input {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.search-input:focus {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* Smooth theme toggle */
+.theme-toggle-icon {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.theme-toggle-icon:hover {
+  transform: rotate(180deg) scale(1.15);
+}
+
+/* Mobile menu improvements */
+@media (max-width: 768px) {
+  .navbar-button {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .dropdown-menu {
+    transform-origin: top center;
+    left: 50%;
+    right: auto;
+    width: 95vw;
+    max-width: 320px;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+  }
+}
+
+/* Scroll-aware navbar */
+.navbar-scroll-shadow {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.navbar-scroll-shadow.scrolled {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.dark .navbar-scroll-shadow.scrolled {
+  background-color: rgba(31, 41, 55, 0.95);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

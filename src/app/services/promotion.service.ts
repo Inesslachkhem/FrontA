@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, of, throwError, forkJoin } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
@@ -226,6 +226,38 @@ export class PromotionService {
       }),
       catchError((error) => {
         console.error('Error generating promotions:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Create promotions from AI recommendations
+  createPromotionsFromRecommendations(recommendations: any[]): Observable<any> {
+    const promotions = recommendations.map((rec) => ({
+      DateDebut: rec.start_date,
+      DateFin: rec.end_date,
+      TauxReduction: rec.suggested_discount / 100, // Convert percentage to decimal
+      CodeArticle: rec.code_article,
+      Prix_Vente_TND_Avant: rec.current_price,
+      Prix_Vente_TND_Apres: rec.discounted_price,
+      PredictionConfidence: rec.confidence,
+      ExpectedVolumeImpact: rec.predicted_sales_lift,
+      ExpectedRevenueImpact: rec.expected_revenue_increase,
+      IsAccepted: false, // Default to pending approval
+    }));
+
+    // Create promotions one by one using forkJoin
+    const createObservables = promotions.map((promotion) =>
+      this.http.post<any>(
+        `${this.apiUrl}/promotion`,
+        promotion,
+        this.httpOptions
+      )
+    );
+
+    return forkJoin(createObservables).pipe(
+      catchError((error) => {
+        console.error('Error creating promotions from recommendations:', error);
         return throwError(() => error);
       })
     );

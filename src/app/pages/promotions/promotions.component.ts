@@ -174,6 +174,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // Data loading methods
   loadPromotions(): void {
+    console.log('loadPromotions called with statusFilter:', this.statusFilter);
     this.loading = true;
 
     // Choose the appropriate service method based on status filter
@@ -202,6 +203,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
     promotionObservable.pipe(takeUntil(this.destroy$)).subscribe({
       next: (promotions: Promotion[]) => {
+        console.log('Promotions loaded:', promotions.length, 'promotions');
         this.promotions = promotions;
         this.applyFilters();
         this.calculateStats();
@@ -405,20 +407,29 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // Promotion approval/rejection methods
   approvePromotion(promotion: Promotion): void {
-    if (!promotion.id) return;
+    console.log('approvePromotion called with:', promotion);
+    if (!promotion.id) {
+      console.error('Promotion ID is missing');
+      return;
+    }
 
     const confirmed = confirm(
       `Êtes-vous sûr de vouloir approuver la promotion pour ${promotion.product_name}?`
     );
     if (!confirmed) return;
 
+    console.log(
+      'Calling promotionService.approvePromotion with ID:',
+      promotion.id
+    );
     this.promotionService.approvePromotion(promotion.id).subscribe({
       next: (response) => {
-        console.log('Promotion approved:', response);
+        console.log('Promotion approved successfully:', response);
         this.showToast(
           `Promotion pour ${promotion.product_name} approuvée avec succès.`,
           'success'
         );
+        console.log('Calling refreshData...');
         this.refreshData();
       },
       error: (error) => {
@@ -537,7 +548,12 @@ export class PromotionsComponent implements OnInit, OnDestroy {
 
   // Helper methods for status management
   isPendingPromotion(promotion: Promotion): boolean {
-    return promotion.status === 'pending' || promotion.is_accepted === false;
+    const result =
+      promotion.is_accepted === null || promotion.is_accepted === undefined;
+    console.log(
+      `isPendingPromotion for ${promotion.product_name}: is_accepted=${promotion.is_accepted}, result=${result}`
+    );
+    return result;
   }
 
   isApprovedPromotion(promotion: Promotion): boolean {
@@ -628,6 +644,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
   }
 
   refreshData(): void {
+    console.log('refreshData called');
     this.loadPromotions();
     this.loadCategories();
   }
@@ -660,5 +677,50 @@ export class PromotionsComponent implements OnInit, OnDestroy {
       this.toastMessage = '';
       this.toastType = 'info';
     }, 300);
+  }
+
+  // Apply AI recommendations by creating promotions in the database
+  applyRecommendations(): void {
+    if (!this.promotionResults?.recommendations) {
+      this.showToast('No recommendations available to apply.', 'error');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Are you sure you want to create ${this.promotionResults.recommendations.length} promotions from these recommendations?`
+    );
+    if (!confirmed) return;
+
+    console.log(
+      'Applying recommendations:',
+      this.promotionResults.recommendations
+    );
+    this.loading = true;
+
+    this.promotionService
+      .createPromotionsFromRecommendations(
+        this.promotionResults.recommendations
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (results) => {
+          console.log('Promotions created successfully:', results);
+          this.showToast(
+            `Successfully created ${results.length} promotions from recommendations!`,
+            'success'
+          );
+          this.closePromotionModal();
+          this.refreshData(); // Refresh the promotions list
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error applying recommendations:', error);
+          this.showToast(
+            'Failed to create promotions from recommendations. Please try again.',
+            'error'
+          );
+          this.loading = false;
+        },
+      });
   }
 }

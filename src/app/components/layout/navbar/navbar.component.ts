@@ -1,4 +1,11 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Inject,
+  PLATFORM_ID,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -13,7 +20,7 @@ import { User, getUserTypeDisplayName } from '../../../models/user.model';
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, OnDestroy {
   pageTitle = 'Dashboard';
   isDarkMode = false;
   isNotificationOpen = false;
@@ -22,6 +29,7 @@ export class NavbarComponent implements OnInit {
   isSidebarCollapsed = false;
   isMobileSearchOpen = false;
   isMobile = false;
+  isScrolled = false;
 
   notifications = [
     {
@@ -100,6 +108,29 @@ export class NavbarComponent implements OnInit {
       this.isDarkMode = savedTheme === 'dark';
     }
     this.applyTheme();
+
+    // Add scroll listener for navbar effects
+    if (isPlatformBrowser(this.platformId)) {
+      window.addEventListener('scroll', this.onScroll.bind(this), {
+        passive: true,
+      });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      window.removeEventListener('scroll', this.onScroll.bind(this), {
+        passive: true,
+      } as EventListenerOptions);
+    }
+  }
+
+  private onScroll(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+      this.isScrolled = scrollTop > 10;
+    }
   }
 
   toggleTheme(): void {
@@ -123,14 +154,38 @@ export class NavbarComponent implements OnInit {
     }
   }
 
+  toggleMobileSearch(): void {
+    this.isMobileSearchOpen = !this.isMobileSearchOpen;
+    // Close other dropdowns when opening search
+    if (this.isMobileSearchOpen) {
+      this.isNotificationOpen = false;
+      this.isProfileOpen = false;
+      // Focus the input after animation
+      setTimeout(() => {
+        const input = document.querySelector(
+          '#mobileSearchInput'
+        ) as HTMLInputElement;
+        if (input) input.focus();
+      }, 300);
+    }
+  }
+
   toggleNotifications(): void {
     this.isNotificationOpen = !this.isNotificationOpen;
     this.isProfileOpen = false;
+    // Close mobile search when opening notifications
+    if (this.isNotificationOpen) {
+      this.isMobileSearchOpen = false;
+    }
   }
 
   toggleProfile(): void {
     this.isProfileOpen = !this.isProfileOpen;
     this.isNotificationOpen = false;
+    // Close mobile search when opening profile
+    if (this.isProfileOpen) {
+      this.isMobileSearchOpen = false;
+    }
   }
 
   markAsRead(notificationId: number): void {
@@ -174,16 +229,26 @@ export class NavbarComponent implements OnInit {
     this.layoutService.toggleSidebar();
   }
 
-  toggleMobileSearch(): void {
-    this.isMobileSearchOpen = !this.isMobileSearchOpen;
-    // Close other dropdowns when opening search
-    if (this.isMobileSearchOpen) {
+  closeMobileSearch(): void {
+    this.isMobileSearchOpen = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const navbarElement = target.closest('.navbar-container');
+
+    // Close dropdowns if clicking outside
+    if (!navbarElement) {
       this.isNotificationOpen = false;
       this.isProfileOpen = false;
     }
   }
 
-  closeMobileSearch(): void {
-    this.isMobileSearchOpen = false;
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: KeyboardEvent): void {
+    this.isNotificationOpen = false;
+    this.isProfileOpen = false;
+    this.closeMobileSearch();
   }
 }
