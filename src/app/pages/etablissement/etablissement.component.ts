@@ -12,6 +12,8 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { EtablissementService } from '../../services/etablissement.service';
 import { ModalService } from '../../services/modal.service';
 import { Etablissement } from '../../models/article.model';
+import { ConfirmationService } from '../../services/confirmation.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-etablissement',
@@ -48,7 +50,9 @@ export class EtablissementComponent implements OnInit {
   constructor(
     private etablissementService: EtablissementService,
     private modalService: ModalService,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private confirmationService: ConfirmationService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit() {
@@ -152,12 +156,47 @@ export class EtablissementComponent implements OnInit {
   }
 
   deleteEtablissement(id: number) {
-    if (confirm('Are you sure you want to delete this etablissement?')) {
-      this.etablissementService.delete(id).subscribe({
-        next: () => this.loadEtablissements(),
-        error: (error) => console.error('Error deleting etablissement:', error),
+    const etablissement = this.etablissements.find((e) => e.id === id);
+    const etablissementName = etablissement
+      ? etablissement.libelle
+      : 'cet établissement';
+
+    this.confirmationService
+      .confirmDelete(etablissementName)
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.etablissementService.delete(id).subscribe({
+            next: () => {
+              this.notificationService.success(
+                'Établissement supprimé avec succès'
+              );
+              this.loadEtablissements();
+            },
+            error: (error) => {
+              console.error('Error deleting etablissement:', error);
+              let errorMessage =
+                "Erreur lors de la suppression de l'établissement";
+
+              if (error.status === 400 && error.error?.details?.message) {
+                errorMessage =
+                  error.error.details.message +
+                  ". Vous devez d'abord supprimer les données associées.";
+              } else if (error.status === 404) {
+                errorMessage = 'Établissement non trouvé';
+              } else if (error.status === 500) {
+                errorMessage = 'Erreur serveur lors de la suppression';
+              } else if (error.error?.error) {
+                errorMessage = error.error.error;
+              }
+
+              this.notificationService.error(
+                'Erreur de suppression',
+                errorMessage
+              );
+            },
+          });
+        }
       });
-    }
   }
 
   onFileSelected(event: any) {
@@ -172,7 +211,10 @@ export class EtablissementComponent implements OnInit {
         .subscribe({
           next: (response) => {
             console.log('Import successful:', response);
-            alert(response.message || 'Import successful');
+            this.notificationService.success(
+              'Import réussi',
+              response.message || 'Import successful'
+            );
             this.loadEtablissements();
             this.selectedFile = null;
             // Reset the file input
@@ -195,12 +237,18 @@ export class EtablissementComponent implements OnInit {
               errorMessage = error.message;
             }
 
-            alert(errorMessage);
+            this.notificationService.error(
+              "Erreur d'importation",
+              errorMessage
+            );
             this.loading = false;
           },
         });
     } else {
-      alert('Veuillez sélectionner un fichier CSV.');
+      this.notificationService.warning(
+        'Fichier manquant',
+        'Veuillez sélectionner un fichier CSV.'
+      );
     }
   }
 }

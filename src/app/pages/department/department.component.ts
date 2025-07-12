@@ -11,6 +11,8 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { DepotService } from '../../services/depot.service';
 import { ModalService } from '../../services/modal.service';
 import { Depot } from '../../models/article.model';
+import { ConfirmationService } from '../../services/confirmation.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-department',
@@ -46,7 +48,9 @@ export class DepartmentComponent implements OnInit {
   constructor(
     private depotService: DepotService,
     private modalService: ModalService,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private confirmationService: ConfirmationService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit() {
@@ -142,12 +146,40 @@ export class DepartmentComponent implements OnInit {
   }
 
   deleteDepot(id: number) {
-    if (confirm('Are you sure you want to delete this depot?')) {
-      this.depotService.delete(id).subscribe({
-        next: () => this.loadDepots(),
-        error: (error) => console.error('Error deleting depot:', error),
-      });
-    }
+    const depot = this.depots.find((d) => d.id === id);
+    const depotName = depot ? depot.libelle : 'ce dépôt';
+
+    this.confirmationService.confirmDelete(depotName).subscribe((confirmed) => {
+      if (confirmed) {
+        this.depotService.delete(id).subscribe({
+          next: () => {
+            this.notificationService.success('Dépôt supprimé avec succès');
+            this.loadDepots();
+          },
+          error: (error) => {
+            console.error('Error deleting depot:', error);
+            let errorMessage = 'Erreur lors de la suppression du dépôt';
+
+            if (error.status === 400 && error.error?.details?.message) {
+              errorMessage =
+                error.error.details.message +
+                ". Vous devez d'abord supprimer les données associées.";
+            } else if (error.status === 404) {
+              errorMessage = 'Dépôt non trouvé';
+            } else if (error.status === 500) {
+              errorMessage = 'Erreur serveur lors de la suppression';
+            } else if (error.error?.error) {
+              errorMessage = error.error.error;
+            }
+
+            this.notificationService.error(
+              'Erreur de suppression',
+              errorMessage
+            );
+          },
+        });
+      }
+    });
   }
 
   onFileSelected(event: any) {

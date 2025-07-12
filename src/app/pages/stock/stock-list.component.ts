@@ -13,6 +13,7 @@ import { Stock, Article } from '../../models/article.model';
 import { StockService } from '../../services/stock.service';
 import { ArticleService } from '../../services/article.service';
 import { ModalService } from '../../services/modal.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 
 @Component({
   selector: 'app-stock-list',
@@ -944,7 +945,8 @@ export class StockListComponent implements OnInit {
     private stockService: StockService,
     private articleService: ArticleService,
     private modalService: ModalService,
-    private viewContainer: ViewContainerRef
+    private viewContainer: ViewContainerRef,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -1143,23 +1145,41 @@ export class StockListComponent implements OnInit {
   }
 
   deleteStock(id: number) {
-    if (
-      confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement de stock?')
-    ) {
-      this.stockService.delete(id).subscribe({
-        next: () => {
-          this.showToastMessage('Stock supprimé avec succès!', 'success');
-          this.loadStocks();
-        },
-        error: (error) => {
-          console.error('Error deleting stock:', error);
-          this.showToastMessage(
-            'Erreur lors de la suppression du stock.',
-            'error'
-          );
-        },
+    const stock = this.stocks.find((s) => s.id === id);
+    const stockDescription = stock
+      ? `stock de l'article ${stock.article?.libelle || 'ID ' + id}`
+      : 'cet enregistrement de stock';
+
+    this.confirmationService
+      .confirmDelete(stockDescription)
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.stockService.delete(id).subscribe({
+            next: () => {
+              this.showToastMessage('Stock supprimé avec succès!', 'success');
+              this.loadStocks();
+            },
+            error: (error) => {
+              console.error('Error deleting stock:', error);
+              let errorMessage = 'Erreur lors de la suppression du stock.';
+
+              if (error.status === 400 && error.error?.details?.message) {
+                errorMessage =
+                  error.error.details.message +
+                  ". Vous devez d'abord supprimer les données associées.";
+              } else if (error.status === 404) {
+                errorMessage = 'Enregistrement de stock non trouvé';
+              } else if (error.status === 500) {
+                errorMessage = 'Erreur serveur lors de la suppression';
+              } else if (error.error?.error) {
+                errorMessage = error.error.error;
+              }
+
+              this.showToastMessage(errorMessage, 'error');
+            },
+          });
+        }
       });
-    }
   }
   saveStock() {
     // Calculer la valeur du stock avant de sauvegarder

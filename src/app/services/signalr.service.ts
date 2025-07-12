@@ -1,19 +1,35 @@
 import { Injectable } from '@angular/core';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from '@microsoft/signalr';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Message, ChatNotification, TypingIndicator } from '../models/chat.model';
+import {
+  Message,
+  ChatNotification,
+  TypingIndicator,
+} from '../models/chat.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SignalRService {
   private hubConnection?: HubConnection;
   private readonly isConnected$ = new BehaviorSubject<boolean>(false);
   private readonly messageReceived$ = new BehaviorSubject<Message | null>(null);
-  private readonly userStatusChanged$ = new BehaviorSubject<{ userId: number; isOnline: boolean } | null>(null);
-  private readonly userTyping$ = new BehaviorSubject<TypingIndicator | null>(null);
+  private readonly userStatusChanged$ = new BehaviorSubject<{
+    userId: number;
+    isOnline: boolean;
+  } | null>(null);
+  private readonly userTyping$ = new BehaviorSubject<TypingIndicator | null>(
+    null
+  );
   private readonly conversationsUpdated$ = new BehaviorSubject<boolean>(false);
-  private readonly messagesRead$ = new BehaviorSubject<{ conversationId: number; userId: number } | null>(null);
+  private readonly messagesRead$ = new BehaviorSubject<{
+    conversationId: number;
+    userId: number;
+  } | null>(null);
 
   constructor() {}
 
@@ -29,18 +45,24 @@ export class SignalRService {
         accessTokenFactory: () => {
           // Always get the latest token in case it was refreshed
           const latestToken = localStorage.getItem('token') || token;
-          console.log('🔑 SignalR requesting token - Available:', !!latestToken);
+          console.log(
+            '🔑 SignalR requesting token - Available:',
+            !!latestToken
+          );
           if (latestToken) {
             console.log('🔑 Token length:', latestToken.length);
-            console.log('🔑 Token prefix:', latestToken.substring(0, 20) + '...');
+            console.log(
+              '🔑 Token prefix:',
+              latestToken.substring(0, 20) + '...'
+            );
           }
           return latestToken;
         },
         skipNegotiation: false,
         withCredentials: false,
         headers: {
-          'Access-Control-Allow-Origin': 'http://localhost:4200'
-        }
+          'Access-Control-Allow-Origin': 'http://localhost:4200',
+        },
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Debug)
@@ -65,7 +87,8 @@ export class SignalRService {
     this.setupEventListeners();
 
     console.log('🚀 Starting SignalR connection...');
-    return this.hubConnection.start()
+    return this.hubConnection
+      .start()
       .then(() => {
         console.log('✅ SignalR connection started successfully');
         console.log('Connection ID:', this.hubConnection?.connectionId);
@@ -77,17 +100,19 @@ export class SignalRService {
         console.log('Error details:', {
           name: err.name,
           message: err.message,
-          stack: err.stack
+          stack: err.stack,
         });
-        
+
         this.isConnected$.next(false);
-        
+
         // Enhanced error handling
         if (err.message && err.message.includes('401')) {
-          console.error('🔐 Authentication failed: Token might be invalid or expired');
+          console.error(
+            '🔐 Authentication failed: Token might be invalid or expired'
+          );
           throw new Error('Authentication failed: Please login again');
         }
-        
+
         throw err;
       });
   }
@@ -109,9 +134,12 @@ export class SignalRService {
       this.messageReceived$.next(message);
     });
 
-    this.hubConnection.on('UserStatusChanged', (data: { userId: number; isOnline: boolean }) => {
-      this.userStatusChanged$.next(data);
-    });
+    this.hubConnection.on(
+      'UserStatusChanged',
+      (data: { userId: number; isOnline: boolean }) => {
+        this.userStatusChanged$.next(data);
+      }
+    );
 
     this.hubConnection.on('UserTyping', (data: TypingIndicator) => {
       this.userTyping$.next(data);
@@ -121,9 +149,12 @@ export class SignalRService {
       this.conversationsUpdated$.next(true);
     });
 
-    this.hubConnection.on('MessagesRead', (data: { conversationId: number; userId: number }) => {
-      this.messagesRead$.next(data);
-    });
+    this.hubConnection.on(
+      'MessagesRead',
+      (data: { conversationId: number; userId: number }) => {
+        this.messagesRead$.next(data);
+      }
+    );
 
     this.hubConnection.on('Error', (error: string) => {
       console.error('SignalR error:', error);
@@ -146,12 +177,22 @@ export class SignalRService {
   }
 
   // Public methods to send messages to the hub
-  public async sendMessage(conversationId: number, content: string, type: number = 0): Promise<void> {
+  public async sendMessage(
+    conversationId: number,
+    content: string,
+    type: number = 0,
+    attachmentUrl?: string,
+    attachmentFileName?: string,
+    attachmentSize?: number
+  ): Promise<void> {
     if (this.hubConnection && this.isConnected$.value) {
       await this.hubConnection.invoke('SendMessage', {
         conversationId,
         content,
-        type
+        type,
+        attachmentUrl,
+        attachmentFileName,
+        attachmentSize,
       });
     }
   }
@@ -189,7 +230,10 @@ export class SignalRService {
     return this.messageReceived$.asObservable();
   }
 
-  public get userStatusChanged(): Observable<{ userId: number; isOnline: boolean } | null> {
+  public get userStatusChanged(): Observable<{
+    userId: number;
+    isOnline: boolean;
+  } | null> {
     return this.userStatusChanged$.asObservable();
   }
 
@@ -201,7 +245,10 @@ export class SignalRService {
     return this.conversationsUpdated$.asObservable();
   }
 
-  public get messagesRead(): Observable<{ conversationId: number; userId: number } | null> {
+  public get messagesRead(): Observable<{
+    conversationId: number;
+    userId: number;
+  } | null> {
     return this.messagesRead$.asObservable();
   }
 }

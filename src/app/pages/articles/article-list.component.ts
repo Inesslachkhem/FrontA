@@ -13,6 +13,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { ArticleService } from '../../services/article.service';
 import { CategorieService } from '../../services/categorie.service';
 import { ModalService } from '../../services/modal.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { Article } from '../../models/article.model';
 import { Categorie } from '../../models/categorie.model';
 
@@ -22,159 +23,6 @@ import { Categorie } from '../../models/categorie.model';
   imports: [CommonModule, FormsModule, RouterModule, OverlayModule],
   styles: [
     `
-      /* Glassmorphism and Dark Theme */
-      .glass-container {
-        background: rgba(17, 25, 40, 0.7);
-        backdrop-filter: blur(16px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.125);
-        border-radius: 16px;
-      }
-
-      .glass-card {
-        background: rgba(20, 30, 48, 0.8);
-        backdrop-filter: blur(20px) saturate(150%);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-card:hover {
-        border-color: rgba(59, 130, 246, 0.4);
-        box-shadow: 0 16px 48px rgba(59, 130, 246, 0.1);
-        transform: translateY(-2px);
-      }
-
-      .glass-input {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 8px;
-        color: #e2e8f0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-input:focus {
-        border-color: rgba(59, 130, 246, 0.6);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        background: rgba(30, 41, 59, 0.9);
-      }
-
-      .glass-input::placeholder {
-        color: #94a3b8;
-      }
-
-      .glass-button {
-        background: linear-gradient(
-          135deg,
-          rgba(59, 130, 246, 0.8),
-          rgba(37, 99, 235, 0.8)
-        );
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .glass-button:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(59, 130, 246, 1),
-          rgba(37, 99, 235, 1)
-        );
-        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-        transform: translateY(-1px);
-      }
-
-      .glass-button:active {
-        transform: translateY(0);
-      }
-
-      .glass-button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
-        transition: left 0.5s;
-      }
-
-      .glass-button:hover::before {
-        left: 100%;
-      }
-
-      .glass-button-secondary {
-        background: rgba(71, 85, 105, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        border-radius: 8px;
-        color: #e2e8f0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-button-secondary:hover {
-        background: rgba(71, 85, 105, 0.9);
-        border-color: rgba(148, 163, 184, 0.6);
-        transform: translateY(-1px);
-      }
-
-      .glass-button-danger {
-        background: linear-gradient(
-          135deg,
-          rgba(239, 68, 68, 0.8),
-          rgba(220, 38, 38, 0.8)
-        );
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        border-radius: 8px;
-        color: white;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-button-danger:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(239, 68, 68, 1),
-          rgba(220, 38, 38, 1)
-        );
-        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
-        transform: translateY(-1px);
-      }
-
-      .glass-button-success {
-        background: linear-gradient(
-          135deg,
-          rgba(34, 197, 94, 0.8),
-          rgba(22, 163, 74, 0.8)
-        );
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        border-radius: 8px;
-        color: white;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-button-success:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(34, 197, 94, 1),
-          rgba(22, 163, 74, 1)
-        );
-        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
-        transform: translateY(-1px);
-      }
-
       /* Modal Animations */
       @keyframes modalBackdropFadeIn {
         0% {
@@ -223,47 +71,6 @@ import { Categorie } from '../../models/categorie.model';
       }
 
       /* Toast Notifications */
-      .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        max-width: 400px;
-      }
-
-      .toast {
-        background: rgba(17, 25, 40, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: white;
-        padding: 16px 20px;
-        margin-bottom: 12px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .toast.toast-success {
-        border-left: 4px solid #10b981;
-        background: rgba(5, 46, 22, 0.95);
-      }
-
-      .toast.toast-error {
-        border-left: 4px solid #ef4444;
-        background: rgba(51, 10, 10, 0.95);
-      }
-
-      .toast.toast-info {
-        border-left: 4px solid #3b82f6;
-        background: rgba(7, 25, 51, 0.95);
-      }
-
-      .toast.closing {
-        animation: toastSlideOut 0.3s ease-in forwards;
-      }
-
       @keyframes toastSlideIn {
         0% {
           opacity: 0;
@@ -286,43 +93,15 @@ import { Categorie } from '../../models/categorie.model';
         }
       }
 
-      /* Table styles */
-      .glass-table {
-        background: rgba(20, 30, 48, 0.6);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 12px;
-        overflow: hidden;
+      .toast {
+        animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
-      .glass-table thead {
-        background: rgba(30, 41, 59, 0.8);
-        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      .toast.closing {
+        animation: toastSlideOut 0.3s ease-in forwards;
       }
 
-      .glass-table tbody tr {
-        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-        transition: all 0.2s ease;
-      }
-
-      .glass-table tbody tr:hover {
-        background: rgba(59, 130, 246, 0.1);
-        backdrop-filter: blur(20px);
-      }
-
-      .glass-table th {
-        color: #e2e8f0;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.75rem;
-      }
-
-      .glass-table td {
-        color: #cbd5e1;
-      }
-
-      /* Loading and Empty states */
+      /* Loading spinner */
       .loading-spinner {
         animation: spin 1s linear infinite;
       }
@@ -336,51 +115,33 @@ import { Categorie } from '../../models/categorie.model';
         }
       }
 
-      .empty-state {
-        background: rgba(20, 30, 48, 0.6);
-        backdrop-filter: blur(10px);
-        border: 2px dashed rgba(59, 130, 246, 0.3);
-        border-radius: 12px;
-        color: #94a3b8;
-        text-align: center;
-        padding: 4rem 2rem;
+      /* Form field animations */
+      .form-field {
+        animation: slideInFromBottom 0.4s ease-out;
       }
 
-      /* Page background */
-      .page-background {
-        min-height: 100vh;
-        background: linear-gradient(
-          135deg,
-          #0f172a 0%,
-          #1e293b 50%,
-          #334155 100%
-        );
-        position: relative;
+      .form-field:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .form-field:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .form-field:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .form-field:nth-child(4) {
+        animation-delay: 0.4s;
       }
 
-      .page-background::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(
-            circle at 20% 20%,
-            rgba(59, 130, 246, 0.1) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 80% 80%,
-            rgba(139, 92, 246, 0.1) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 40% 60%,
-            rgba(34, 197, 94, 0.05) 0%,
-            transparent 50%
-          );
-        pointer-events: none;
+      @keyframes slideInFromBottom {
+        0% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       /* Responsive improvements */
@@ -399,29 +160,35 @@ import { Categorie } from '../../models/categorie.model';
     `,
   ],
   template: `
-    <div class="page-background">
+    <div
+      class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-all duration-500"
+    >
       <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div
           class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4"
         >
           <div>
-            <h1 class="text-4xl font-bold text-white mb-2 font-['Poppins']">
+            <h1
+              class="text-4xl font-bold text-gray-900 dark:text-white mb-2 font-['Poppins']"
+            >
               Articles
             </h1>
-            <p class="text-slate-400">Gerez votre catalogue de produits</p>
+            <p class="text-gray-600 dark:text-gray-400">
+              Gérez votre catalogue de produits
+            </p>
           </div>
           <div class="flex gap-3">
             <button
               (click)="openImportModal()"
-              class="glass-button-success px-6 py-3 text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg"
+              class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg transition-all duration-300"
             >
               <i class="fas fa-upload"></i>
               Importer CSV
             </button>
             <button
               (click)="openAddModal()"
-              class="glass-button px-6 py-3 text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg transition-all duration-300"
             >
               <i class="fas fa-plus"></i>
               Nouvel Article
@@ -430,16 +197,20 @@ import { Categorie } from '../../models/categorie.model';
         </div>
 
         <!-- Filters -->
-        <div class="glass-card p-6 mb-8">
+        <div
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-8 shadow-sm"
+        >
           <h3
-            class="text-lg font-semibold text-white mb-4 flex items-center gap-2"
+            class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
           >
-            <i class="fas fa-filter text-blue-400"></i>
+            <i class="fas fa-filter text-blue-500 dark:text-blue-400"></i>
             Filtres
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 <i class="fas fa-search mr-2"></i>Rechercher
               </label>
               <input
@@ -447,20 +218,22 @@ import { Categorie } from '../../models/categorie.model';
                 (input)="filterArticles()"
                 type="text"
                 placeholder="Code, nom, code-barres..."
-                class="glass-input w-full px-4 py-3 text-sm placeholder:text-slate-400"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">
-                <i class="fas fa-folder mr-2"></i>Categorie
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                <i class="fas fa-folder mr-2"></i>Catégorie
               </label>
               <select
                 [(ngModel)]="selectedCategory"
                 (change)="filterArticles()"
-                class="glass-input w-full px-4 py-3 text-sm"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               >
-                <option value="">Toutes les categories</option>
+                <option value="">Toutes les catégories</option>
                 <option
                   *ngFor="let category of categories"
                   [value]="category.idCategorie"
@@ -471,7 +244,9 @@ import { Categorie } from '../../models/categorie.model';
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 <i class="fas fa-euro-sign mr-2"></i>Prix minimum
               </label>
               <input
@@ -480,12 +255,14 @@ import { Categorie } from '../../models/categorie.model';
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                class="glass-input w-full px-4 py-3 text-sm placeholder:text-slate-400"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 <i class="fas fa-euro-sign mr-2"></i>Prix maximum
               </label>
               <input
@@ -494,42 +271,50 @@ import { Categorie } from '../../models/categorie.model';
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                class="glass-input w-full px-4 py-3 text-sm placeholder:text-slate-400"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
             </div>
           </div>
         </div>
 
         <!-- Articles Table -->
-        <div class="glass-table">
+        <div
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm"
+        >
           <!-- Loading State -->
           <div *ngIf="loading" class="p-8 text-center">
             <div
-              class="loading-spinner w-8 h-8 border-3 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
+              class="loading-spinner w-8 h-8 border-3 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
             ></div>
-            <p class="text-slate-400">Chargement des articles...</p>
+            <p class="text-gray-500 dark:text-gray-400">
+              Chargement des articles...
+            </p>
           </div>
 
           <!-- Empty State -->
           <div
             *ngIf="!loading && filteredArticles.length === 0"
-            class="empty-state"
+            class="text-center py-16 bg-gray-50 dark:bg-gray-700/50 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl m-4"
           >
-            <i class="fas fa-box-open text-4xl mb-4 text-slate-500"></i>
-            <h3 class="text-lg font-semibold text-slate-300 mb-2">
-              Aucun article trouve
+            <i
+              class="fas fa-box-open text-4xl mb-4 text-gray-400 dark:text-gray-500"
+            ></i>
+            <h3
+              class="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2"
+            >
+              Aucun article trouvé
             </h3>
-            <p class="text-slate-500 mb-4">
+            <p class="text-gray-500 dark:text-gray-400 mb-4">
               {{
                 searchTerm || selectedCategory || minPrice || maxPrice
-                  ? 'Aucun article ne correspond aux criteres de recherche.'
-                  : 'Commencez par ajouter des articles a votre catalogue.'
+                  ? 'Aucun article ne correspond aux critères de recherche.'
+                  : 'Commencez par ajouter des articles à votre catalogue.'
               }}
             </p>
             <button
               *ngIf="!searchTerm && !selectedCategory && !minPrice && !maxPrice"
               (click)="openAddModal()"
-              class="glass-button px-6 py-3 text-sm font-medium rounded-xl"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-all duration-300"
             >
               <i class="fas fa-plus mr-2"></i>
               Ajouter le premier article
@@ -542,41 +327,58 @@ import { Categorie } from '../../models/categorie.model';
             class="overflow-x-auto"
           >
             <table class="min-w-full">
-              <thead>
+              <thead
+                class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
+              >
                 <tr>
-                  <th class="px-6 py-4 text-left">
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     <i class="fas fa-barcode mr-2"></i>Code
                   </th>
-                  <th class="px-6 py-4 text-left">
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     <i class="fas fa-tag mr-2"></i>Produit
                   </th>
-                  <th class="px-6 py-4 text-left">
-                    <i class="fas fa-folder mr-2"></i>Categorie
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    <i class="fas fa-folder mr-2"></i>Catégorie
                   </th>
-                  <th class="px-6 py-4 text-left">
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     <i class="fas fa-euro-sign mr-2"></i>Prix de vente
                   </th>
-                  <th class="px-6 py-4 text-left">
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     <i class="fas fa-truck mr-2"></i>Fournisseur
                   </th>
-                  <th class="px-6 py-4 text-left">
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     <i class="fas fa-cog mr-2"></i>Actions
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                <tr *ngFor="let article of paginatedArticles" class="group">
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                <tr
+                  *ngFor="let article of paginatedArticles"
+                  class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
                   <td
-                    class="px-6 py-4 font-mono text-sm font-medium text-white"
+                    class="px-6 py-4 font-mono text-sm font-medium text-gray-800 dark:text-gray-200"
                   >
                     {{ article.codeArticle }}
                   </td>
                   <td class="px-6 py-4">
-                    <div class="font-medium text-white">
+                    <div class="font-medium text-gray-800 dark:text-gray-200">
                       {{ article.libelle }}
                     </div>
                     <div
-                      class="text-sm text-slate-400 font-mono"
+                      class="text-sm text-gray-600 dark:text-gray-400 font-mono"
                       *ngIf="article.codeBarre"
                     >
                       {{ article.codeBarre }}
@@ -584,32 +386,36 @@ import { Categorie } from '../../models/categorie.model';
                   </td>
                   <td class="px-6 py-4 text-sm">
                     <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700"
                     >
                       {{ getCategoryName(article.idCategorie) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-sm font-semibold text-green-400">
+                  <td
+                    class="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400"
+                  >
                     {{
                       article.prix_Vente_TND
                         | currency : 'TND' : 'symbol' : '1.2-2' : 'fr'
                     }}
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-300">
+                  <td
+                    class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400"
+                  >
                     {{ article.fournisseur || '-' }}
                   </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       <button
                         (click)="editArticle(article)"
-                        class="glass-button-secondary p-2 text-xs rounded-lg opacity-70 group-hover:opacity-100 transition-opacity"
+                        class="p-2 text-xs rounded-lg opacity-70 group-hover:opacity-100 transition-all bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                         title="Modifier"
                       >
                         <i class="fas fa-edit"></i>
                       </button>
                       <button
                         (click)="deleteArticle(article.id)"
-                        class="glass-button-danger p-2 text-xs rounded-lg opacity-70 group-hover:opacity-100 transition-opacity"
+                        class="p-2 text-xs rounded-lg opacity-70 group-hover:opacity-100 transition-all bg-red-600 hover:bg-red-700 text-white"
                         title="Supprimer"
                       >
                         <i class="fas fa-trash"></i>
@@ -627,27 +433,27 @@ import { Categorie } from '../../models/categorie.model';
           *ngIf="!loading && filteredArticles.length > 0"
           class="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4"
         >
-          <div class="text-sm text-slate-400">
-            Affichage de {{ (currentPage - 1) * pageSize + 1 }} a
-            {{ getEndIndex() }} sur {{ filteredArticles.length }} resultats
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Affichage de {{ (currentPage - 1) * pageSize + 1 }} à
+            {{ getEndIndex() }} sur {{ filteredArticles.length }} résultats
           </div>
           <div class="flex items-center gap-2">
             <button
               (click)="previousPage()"
               [disabled]="currentPage === 1"
-              class="glass-button-secondary px-4 py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
-              <i class="fas fa-chevron-left mr-2"></i>Precedent
+              <i class="fas fa-chevron-left mr-2"></i>Précédent
             </button>
             <span
-              class="px-4 py-2 text-sm text-slate-300 bg-slate-800/50 rounded-lg border border-slate-600"
+              class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
             >
               Page {{ currentPage }} sur {{ totalPages }}
             </span>
             <button
               (click)="nextPage()"
               [disabled]="currentPage === totalPages"
-              class="glass-button-secondary px-4 py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
               Suivant<i class="fas fa-chevron-right ml-2"></i>
             </button>
@@ -655,34 +461,40 @@ import { Categorie } from '../../models/categorie.model';
         </div>
 
         <!-- Toast Notifications -->
-        <div class="toast-container">
+        <div class="fixed top-20 right-20 z-50 max-w-sm w-full space-y-3">
           <div
             *ngFor="let toast of toasts"
-            class="toast"
-            [class.toast-success]="toast.type === 'success'"
-            [class.toast-error]="toast.type === 'error'"
-            [class.toast-info]="toast.type === 'info'"
+            class="toast bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4"
+            [class.border-l-4]="true"
+            [class.border-l-green-500]="toast.type === 'success'"
+            [class.border-l-red-500]="toast.type === 'error'"
+            [class.border-l-blue-500]="toast.type === 'info'"
             [class.closing]="toast.closing"
           >
             <div class="flex items-start gap-3">
               <i
-                class="fas"
+                class="fas mt-0.5"
                 [class.fa-check-circle]="toast.type === 'success'"
                 [class.fa-exclamation-circle]="toast.type === 'error'"
                 [class.fa-info-circle]="toast.type === 'info'"
-                [class.text-green-400]="toast.type === 'success'"
-                [class.text-red-400]="toast.type === 'error'"
-                [class.text-blue-400]="toast.type === 'info'"
+                [class.text-green-500]="toast.type === 'success'"
+                [class.text-red-500]="toast.type === 'error'"
+                [class.text-blue-500]="toast.type === 'info'"
               ></i>
               <div class="flex-1">
-                <p class="font-medium text-sm">{{ toast.title }}</p>
-                <p *ngIf="toast.message" class="text-xs opacity-90 mt-1">
+                <p class="font-medium text-sm text-gray-900 dark:text-white">
+                  {{ toast.title }}
+                </p>
+                <p
+                  *ngIf="toast.message"
+                  class="text-xs text-gray-600 dark:text-gray-400 mt-1"
+                >
                   {{ toast.message }}
                 </p>
               </div>
               <button
                 (click)="hideToast(toast)"
-                class="text-white/70 hover:text-white transition-colors"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <i class="fas fa-times text-xs"></i>
               </button>
@@ -696,7 +508,7 @@ import { Categorie } from '../../models/categorie.model';
         <ng-template #addEditModalTemplate>
           <div class="modal-content-wrapper">
             <div
-              class="relative w-full max-w-4xl mx-auto glass-card transform transition-all duration-300 ease-out"
+              class="relative w-full max-w-4xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl transform transition-all duration-300 ease-out"
               style="animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)"
               [class.closing]="isClosingModal"
             >
@@ -704,7 +516,7 @@ import { Categorie } from '../../models/categorie.model';
               <div class="p-8 space-y-6">
                 <!-- Header -->
                 <div
-                  class="flex items-center justify-between pb-6 border-b border-slate-700"
+                  class="flex items-center justify-between pb-6 border-b border-gray-200 dark:border-gray-700"
                 >
                   <div class="flex items-center space-x-4">
                     <!-- Icon -->
@@ -722,7 +534,7 @@ import { Categorie } from '../../models/categorie.model';
                     </div>
                     <div>
                       <h3
-                        class="text-2xl font-semibold text-white font-['Poppins']"
+                        class="text-2xl font-semibold text-gray-900 dark:text-white font-['Poppins']"
                       >
                         {{
                           showEditModal
@@ -730,7 +542,7 @@ import { Categorie } from '../../models/categorie.model';
                             : 'Nouvel article'
                         }}
                       </h3>
-                      <p class="text-slate-400 text-sm">
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">
                         {{
                           showEditModal
                             ? "Modifiez les informations de l'article"
@@ -741,7 +553,7 @@ import { Categorie } from '../../models/categorie.model';
                   </div>
                   <button
                     (click)="closeModal()"
-                    class="text-slate-400 hover:text-white transition-colors duration-200 p-2 hover:bg-slate-700 rounded-lg"
+                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
                     <i class="fas fa-times text-lg"></i>
                   </button>
@@ -752,8 +564,12 @@ import { Categorie } from '../../models/categorie.model';
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Code Article Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-barcode mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-barcode mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Code Article *
                       </label>
                       <input
@@ -761,30 +577,38 @@ import { Categorie } from '../../models/categorie.model';
                         name="codeArticle"
                         type="text"
                         required
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="ex: ART001"
                       />
                     </div>
 
                     <!-- Code Barre Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-qrcode mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-qrcode mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Code Barre
                       </label>
                       <input
                         [(ngModel)]="currentArticle.codeBarre"
                         name="codeBarre"
                         type="text"
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="Code barre optionnel"
                       />
                     </div>
 
                     <!-- Libelle Field -->
                     <div class="md:col-span-2 space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-tag mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-tag mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Libelle *
                       </label>
                       <input
@@ -792,15 +616,19 @@ import { Categorie } from '../../models/categorie.model';
                         name="libelle"
                         type="text"
                         required
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="Nom du produit"
                       />
                     </div>
 
                     <!-- Prix Vente Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-euro-sign mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-euro-sign mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Prix de vente (TND)
                       </label>
                       <input
@@ -808,15 +636,19 @@ import { Categorie } from '../../models/categorie.model';
                         name="prixVente"
                         type="number"
                         step="0.01"
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="0.00"
                       />
                     </div>
 
                     <!-- Prix Achat Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-shopping-cart mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-shopping-cart mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Prix d'achat (TND)
                       </label>
                       <input
@@ -824,36 +656,44 @@ import { Categorie } from '../../models/categorie.model';
                         name="prixAchat"
                         type="number"
                         step="0.01"
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="0.00"
                       />
                     </div>
 
                     <!-- Fournisseur Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-truck mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-truck mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Fournisseur
                       </label>
                       <input
                         [(ngModel)]="currentArticle.fournisseur"
                         name="fournisseur"
                         type="text"
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                         placeholder="Nom du fournisseur"
                       />
                     </div>
 
                     <!-- Categorie Field -->
                     <div class="space-y-2 form-field">
-                      <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-folder mr-2 text-blue-400"></i>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        <i
+                          class="fas fa-folder mr-2 text-blue-500 dark:text-blue-400"
+                        ></i>
                         Categorie
                       </label>
                       <select
                         [(ngModel)]="currentArticle.idCategorie"
                         name="idCategorie"
-                        class="glass-input form-input w-full px-4 py-3 text-sm"
+                        class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                       >
                         <option value="">Selectionner une categorie</option>
                         <option
@@ -868,12 +708,12 @@ import { Categorie } from '../../models/categorie.model';
 
                   <!-- Action Buttons -->
                   <div
-                    class="flex space-x-4 pt-6 border-t border-slate-700 form-field"
+                    class="flex space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700 form-field"
                   >
                     <button
                       type="button"
                       (click)="closeModal()"
-                      class="glass-button-secondary btn-hover flex-1 py-3 px-6 rounded-xl font-medium"
+                      class="flex-1 py-3 px-6 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-300"
                     >
                       <i class="fas fa-times mr-2"></i>
                       Annuler
@@ -881,7 +721,7 @@ import { Categorie } from '../../models/categorie.model';
                     <button
                       type="submit"
                       [disabled]="saving"
-                      class="glass-button btn-hover flex-1 py-3 px-6 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+                      class="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
                     >
                       <span *ngIf="saving">
                         <i class="fas fa-spinner fa-spin mr-2"></i>
@@ -903,13 +743,13 @@ import { Categorie } from '../../models/categorie.model';
         <ng-template #importModalTemplate>
           <div class="modal-content-wrapper">
             <div
-              class="relative w-full max-w-3xl mx-auto glass-card transform transition-all duration-300 ease-out"
+              class="relative w-full max-w-3xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl transform transition-all duration-300 ease-out"
               style="animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)"
               [class.closing]="isClosingModal"
             >
               <div class="p-8">
                 <div
-                  class="flex items-center justify-between pb-6 border-b border-slate-700"
+                  class="flex items-center justify-between pb-6 border-b border-gray-200 dark:border-gray-700"
                 >
                   <div class="flex items-center space-x-4">
                     <div
@@ -919,18 +759,18 @@ import { Categorie } from '../../models/categorie.model';
                     </div>
                     <div>
                       <h3
-                        class="text-2xl font-semibold text-white font-['Poppins']"
+                        class="text-2xl font-semibold text-gray-900 dark:text-white font-['Poppins']"
                       >
                         Importer des articles
                       </h3>
-                      <p class="text-slate-400 text-sm">
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">
                         Importer un fichier CSV avec vos articles
                       </p>
                     </div>
                   </div>
                   <button
                     (click)="closeImportModal()"
-                    class="text-slate-400 hover:text-white transition-colors duration-200 p-2 hover:bg-slate-700 rounded-lg"
+                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
                     <i class="fas fa-times text-lg"></i>
                   </button>
@@ -939,9 +779,11 @@ import { Categorie } from '../../models/categorie.model';
                 <div class="space-y-6 mt-6">
                   <div>
                     <label
-                      class="block text-sm font-medium text-slate-300 mb-3"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
                     >
-                      <i class="fas fa-file-csv mr-2 text-green-400"></i>
+                      <i
+                        class="fas fa-file-csv mr-2 text-green-500 dark:text-green-400"
+                      ></i>
                       Selectionner un fichier CSV
                     </label>
                     <input
@@ -949,19 +791,21 @@ import { Categorie } from '../../models/categorie.model';
                       type="file"
                       accept=".csv"
                       (change)="onFileSelected($event)"
-                      class="block w-full text-sm text-slate-300 glass-input cursor-pointer focus:outline-none file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:transition-colors"
+                      class="block w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer focus:outline-none file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:transition-colors"
                     />
                     <div class="mt-6 space-y-4">
                       <!-- Format Information -->
-                      <div class="glass-card p-4 border-blue-500/20">
+                      <div
+                        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4"
+                      >
                         <p
-                          class="font-medium text-blue-300 mb-2 flex items-center"
+                          class="font-medium text-blue-700 dark:text-blue-300 mb-2 flex items-center"
                         >
                           <i class="fas fa-info-circle mr-2"></i>
                           Format CSV requis (20 colonnes):
                         </p>
                         <div
-                          class="text-xs bg-slate-900/50 p-3 rounded-lg border border-slate-600 text-slate-300 font-mono overflow-x-auto"
+                          class="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-mono overflow-x-auto"
                         >
                           Id, CodeArticle, CodeBarre, Libelle, CodeDim1,
                           LibelleDim1, CodeDim2, LibelleDim2, Fournisseur,
@@ -973,30 +817,32 @@ import { Categorie } from '../../models/categorie.model';
 
                       <!-- Important Warning -->
                       <div
-                        class="glass-card p-4 border-blue-500/20 bg-blue-900/20"
+                        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4"
                       >
                         <p
-                          class="font-medium text-blue-300 flex items-center mb-2"
+                          class="font-medium text-blue-700 dark:text-blue-300 flex items-center mb-2"
                         >
                           <i class="fas fa-info-circle mr-2"></i>
                           IMPORTANT
                         </p>
-                        <p class="text-sm text-blue-200">
+                        <p class="text-sm text-blue-600 dark:text-blue-300">
                           Les categories doivent etre importees en premier !
                         </p>
                       </div>
 
                       <!-- Danger Warning -->
                       <div
-                        class="glass-card p-4 border-red-500/20 bg-red-900/20"
+                        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4"
                       >
                         <p
-                          class="font-medium text-red-300 flex items-center mb-2"
+                          class="font-medium text-red-700 dark:text-red-300 flex items-center mb-2"
                         >
                           <i class="fas fa-exclamation-triangle mr-2"></i>
                           ATTENTION
                         </p>
-                        <div class="text-sm text-red-200 space-y-1">
+                        <div
+                          class="text-sm text-red-600 dark:text-red-300 space-y-1"
+                        >
                           <p>Ceci remplacera TOUTES les donnees d'articles !</p>
                           <p>
                             Tous les articles, stocks et ventes existants seront
@@ -1009,15 +855,17 @@ import { Categorie } from '../../models/categorie.model';
 
                   <div
                     *ngIf="selectedFile"
-                    class="text-sm glass-card p-4 border-green-500/20 bg-green-900/20"
+                    class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4"
                   >
-                    <div class="flex items-center text-green-300">
+                    <div
+                      class="flex items-center text-green-700 dark:text-green-300"
+                    >
                       <i class="fas fa-file-check mr-2"></i>
                       <strong>Fichier selectionne :</strong>
                     </div>
-                    <p class="text-green-200 mt-1">
+                    <p class="text-green-600 dark:text-green-400 mt-1">
                       {{ selectedFile.name }}
-                      <span class="text-green-400 ml-2">
+                      <span class="text-green-500 dark:text-green-400 ml-2">
                         ({{ (selectedFile.size / 1024).toFixed(2) }} KB)
                       </span>
                     </p>
@@ -1025,11 +873,11 @@ import { Categorie } from '../../models/categorie.model';
 
                   <!-- Action Buttons -->
                   <div
-                    class="flex flex-wrap gap-3 pt-6 border-t border-slate-700"
+                    class="flex flex-wrap gap-3 pt-6 border-t border-gray-200 dark:border-gray-700"
                   >
                     <button
                       (click)="checkCategories()"
-                      class="glass-button-secondary px-4 py-2 text-sm rounded-lg"
+                      class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-300"
                     >
                       <i class="fas fa-check mr-2"></i>
                       Verifier Categories
@@ -1037,7 +885,7 @@ import { Categorie } from '../../models/categorie.model';
                     <button
                       (click)="testCsvFormat()"
                       [disabled]="!selectedFile"
-                      class="glass-button-secondary px-4 py-2 text-sm rounded-lg disabled:opacity-50"
+                      class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                     >
                       <i class="fas fa-vial mr-2"></i>
                       Test CSV
@@ -1045,14 +893,14 @@ import { Categorie } from '../../models/categorie.model';
                     <div class="flex-1"></div>
                     <button
                       (click)="closeImportModal()"
-                      class="glass-button-secondary px-6 py-2 rounded-lg font-medium"
+                      class="px-6 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-300"
                     >
                       Annuler
                     </button>
                     <button
                       (click)="importArticles()"
                       [disabled]="!selectedFile || importing"
-                      class="glass-button-success px-6 py-2 rounded-lg font-medium disabled:opacity-50 flex items-center"
+                      class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-300"
                     >
                       <span *ngIf="importing">
                         <i class="fas fa-spinner fa-spin mr-2"></i>Import en
@@ -1145,7 +993,8 @@ export class ArticleListComponent implements OnInit {
     private articleService: ArticleService,
     private categorieService: CategorieService,
     private modalService: ModalService,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -1268,32 +1117,46 @@ export class ArticleListComponent implements OnInit {
 
   deleteArticle(id: number) {
     const article = this.articles.find((a) => a.id === id);
-    const articleName = article ? article.libelle : 'cet article';
+    const articleName = article ? article.libelle : 'this article';
 
-    if (
-      confirm(
-        `Etes-vous sur de vouloir supprimer "${articleName}" ?\n\nCette action est irreversible.`
-      )
-    ) {
-      this.articleService.delete(id).subscribe({
-        next: () => {
-          this.loadArticles();
-          this.showToast(
-            'success',
-            'Article supprime',
-            `"${articleName}" a ete supprime avec succes`
-          );
-        },
-        error: (error) => {
-          console.error('Error deleting article:', error);
-          this.showToast(
-            'error',
-            'Erreur de suppression',
-            "Impossible de supprimer l'article"
-          );
-        },
+    this.confirmationService
+      .confirmDelete(`"${articleName}"`)
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.articleService.delete(id).subscribe({
+            next: () => {
+              this.loadArticles();
+              this.showToast(
+                'success',
+                'Article supprime',
+                `"${articleName}" a ete supprime avec succes`
+              );
+            },
+            error: (error) => {
+              console.error('Error deleting article:', error);
+
+              let errorMessage = "Impossible de supprimer l'article";
+              let errorTitle = 'Erreur de suppression';
+
+              if (error.status === 400 && error.error?.details?.message) {
+                // Handle foreign key constraint error
+                errorTitle = 'Suppression impossible';
+                errorMessage =
+                  error.error.details.message +
+                  ". Vous devez d'abord supprimer les données associées.";
+              } else if (error.status === 404) {
+                errorMessage = 'Article non trouvé';
+              } else if (error.status === 500) {
+                errorMessage = 'Erreur serveur lors de la suppression';
+              } else if (error.error?.error) {
+                errorMessage = error.error.error;
+              }
+
+              this.showToast('error', errorTitle, errorMessage);
+            },
+          });
+        }
       });
-    }
   }
 
   saveArticle() {
@@ -1392,72 +1255,90 @@ export class ArticleListComponent implements OnInit {
   importArticles() {
     if (!this.selectedFile) return;
 
-    // Show warning confirmation
-    const confirmed = confirm(
-      `ATTENTION: REMPLACEMENT DES DONNEES D'ARTICLES !\n\nCette action va :\n- Supprimer TOUS les articles existants\n- Supprimer TOUS les stocks existants\n- Supprimer TOUTES les ventes existantes\n\nEt les remplacer par les donnees d'articles du fichier : ${this.selectedFile.name}\n\nLes categories resteront inchangees.\nCette action NE PEUT PAS etre annulee !\n\nEtes-vous absolument sur de vouloir continuer ?`
-    );
+    // Show warning confirmation using custom modal
+    this.confirmationService
+      .confirmDangerousAction(
+        "ATTENTION: REMPLACEMENT DES DONNEES D'ARTICLES !",
+        `Cette action va :
 
-    if (!confirmed) {
-      return;
-    }
+- Supprimer TOUS les articles existants
+- Supprimer TOUS les stocks existants  
+- Supprimer TOUTES les ventes existantes
 
-    console.log('Starting article import for file:', this.selectedFile.name);
-    console.log('File size:', this.selectedFile.size, 'bytes');
-    console.log('File type:', this.selectedFile.type);
+Et les remplacer par les donnees d'articles du fichier : ${this.selectedFile.name}
 
-    this.importing = true;
-    this.showToast(
-      'info',
-      'Import en cours',
-      'Import des articles en cours...'
-    );
+Les categories resteront inchangees.
+Cette action NE PEUT PAS etre annulee !
 
-    this.articleService.importArticles(this.selectedFile).subscribe({
-      next: (response) => {
-        console.log('Import successful:', response);
-        this.importing = false;
-        this.closeImportModal();
-        this.loadArticles();
-        this.showToast(
-          'success',
-          'Import reussi',
-          'Les articles ont ete importes avec succes'
-        );
-      },
-      error: (error) => {
-        console.error('Import error:', error);
-        this.importing = false;
-
-        let errorMessage = "Erreur lors de l'import des articles";
-        let detailedErrors: any[] = [];
-
-        if (error.status === 400) {
-          if (error.error.Details) {
-            detailedErrors = error.error.Details;
-            errorMessage = `Erreurs de validation CSV (${
-              detailedErrors?.length || 0
-            } problemes trouves)`;
-            this.showToast('error', 'Erreurs de validation', errorMessage);
-          } else if (error.error.MissingCategories) {
-            const missingCats = error.error.MissingCategories;
-            errorMessage = `Categories manquantes : ${
-              missingCats?.join(', ') || 'Categories inconnues'
-            }`;
-            this.showToast('error', 'Categories manquantes', errorMessage);
-
-            // Offer to auto-create the missing categories
-            this.handleMissingCategories(missingCats);
-          } else if (typeof error.error === 'string') {
-            errorMessage = error.error;
-            this.showToast('error', "Erreur d'import", errorMessage);
-          } else {
-            this.showToast('error', "Erreur d'import", errorMessage);
-          }
-        } else {
-          this.showToast('error', "Erreur d'import", errorMessage);
+Etes-vous absolument sur de vouloir continuer ?`,
+        'Oui, Remplacer Tout'
+      )
+      .subscribe((confirmed) => {
+        if (!confirmed) {
+          return;
         }
-      },
-    });
+
+        console.log(
+          'Starting article import for file:',
+          this.selectedFile!.name
+        );
+        console.log('File size:', this.selectedFile!.size, 'bytes');
+        console.log('File type:', this.selectedFile!.type);
+
+        this.importing = true;
+        this.showToast(
+          'info',
+          'Import en cours',
+          'Import des articles en cours...'
+        );
+
+        this.articleService.importArticles(this.selectedFile!).subscribe({
+          next: (response) => {
+            console.log('Import successful:', response);
+            this.importing = false;
+            this.closeImportModal();
+            this.loadArticles();
+            this.showToast(
+              'success',
+              'Import reussi',
+              'Les articles ont ete importes avec succes'
+            );
+          },
+          error: (error) => {
+            console.error('Import error:', error);
+            this.importing = false;
+
+            let errorMessage = "Erreur lors de l'import des articles";
+            let detailedErrors: any[] = [];
+
+            if (error.status === 400) {
+              if (error.error.Details) {
+                detailedErrors = error.error.Details;
+                errorMessage = `Erreurs de validation CSV (${
+                  detailedErrors?.length || 0
+                } problemes trouves)`;
+                this.showToast('error', 'Erreurs de validation', errorMessage);
+              } else if (error.error.MissingCategories) {
+                const missingCats = error.error.MissingCategories;
+                errorMessage = `Categories manquantes : ${
+                  missingCats?.join(', ') || 'Categories inconnues'
+                }`;
+                this.showToast('error', 'Categories manquantes', errorMessage);
+
+                // Offer to auto-create the missing categories
+                this.handleMissingCategories(missingCats);
+              } else if (typeof error.error === 'string') {
+                errorMessage = error.error;
+                this.showToast('error', "Erreur d'import", errorMessage);
+              } else {
+                this.showToast('error', "Erreur d'import", errorMessage);
+              }
+            } else {
+              this.showToast('error', "Erreur d'import", errorMessage);
+            }
+          },
+        });
+      });
   }
 
   checkCategories() {
@@ -1508,35 +1389,43 @@ export class ArticleListComponent implements OnInit {
   }
 
   handleMissingCategories(missingCategories: string[]): void {
-    const autoCreate = confirm(
-      `Categories manquantes detectees !\n\n${
-        missingCategories?.join('\n') || 'Categories inconnues'
-      }\n\nVoulez-vous les creer automatiquement ?\n\nCela creera les categories manquantes avec des valeurs par defaut.`
-    );
+    this.confirmationService
+      .confirmAction(
+        'Categories manquantes detectees !',
+        `Les categories suivantes sont manquantes :
 
-    if (autoCreate) {
-      this.articleService
-        .autoCreateMissingCategories(missingCategories)
-        .subscribe({
-          next: (response) => {
-            console.log('Categories auto-created:', response);
-            this.showToast(
-              'success',
-              'Categories creees',
-              `${response.Message}\n\nVous pouvez maintenant reessayer d'importer vos articles.`
-            );
-            this.loadCategories(); // Reload categories
-          },
-          error: (error) => {
-            console.error('Error auto-creating categories:', error);
-            this.showToast(
-              'error',
-              'Erreur de creation',
-              'Impossible de creer les categories automatiquement'
-            );
-          },
-        });
-    }
+${missingCategories?.join('\n') || 'Categories inconnues'}
+
+Voulez-vous les creer automatiquement ?
+
+Cela creera les categories manquantes avec des valeurs par defaut.`,
+        'Creer les categories'
+      )
+      .subscribe((autoCreate) => {
+        if (autoCreate) {
+          this.articleService
+            .autoCreateMissingCategories(missingCategories)
+            .subscribe({
+              next: (response) => {
+                console.log('Categories auto-created:', response);
+                this.showToast(
+                  'success',
+                  'Categories creees',
+                  `${response.Message}\n\nVous pouvez maintenant reessayer d'importer vos articles.`
+                );
+                this.loadCategories(); // Reload categories
+              },
+              error: (error) => {
+                console.error('Error auto-creating categories:', error);
+                this.showToast(
+                  'error',
+                  'Erreur de creation',
+                  'Impossible de creer les categories automatiquement'
+                );
+              },
+            });
+        }
+      });
   }
 
   showToast(

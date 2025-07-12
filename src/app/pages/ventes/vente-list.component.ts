@@ -14,6 +14,7 @@ import { Vente } from '../../models/vente.model';
 import { VenteService } from '../../services/vente.service';
 import { ArticleService } from '../../services/article.service';
 import { ModalService } from '../../services/modal.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 
 @Component({
   selector: 'app-vente-list',
@@ -959,7 +960,8 @@ export class VenteListComponent implements OnInit {
     private venteService: VenteService,
     private articleService: ArticleService,
     private modalService: ModalService,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -1090,18 +1092,41 @@ export class VenteListComponent implements OnInit {
   }
 
   deleteVente(id: number) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
-      this.venteService.delete(id).subscribe({
-        next: () => {
-          this.showToast('Vente supprimée avec succès', 'success');
-          this.loadVentes();
-        },
-        error: (error) => {
-          console.error('Error deleting vente:', error);
-          this.showToast('Erreur lors de la suppression de la vente', 'error');
-        },
+    const vente = this.ventes.find((v) => v.id === id);
+    const venteDescription = vente
+      ? `vente ${vente.numeroFacture}`
+      : 'cette vente';
+
+    this.confirmationService
+      .confirmDelete(venteDescription)
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.venteService.delete(id).subscribe({
+            next: () => {
+              this.showToast('Vente supprimée avec succès', 'success');
+              this.loadVentes();
+            },
+            error: (error) => {
+              console.error('Error deleting vente:', error);
+              let errorMessage = 'Erreur lors de la suppression de la vente';
+
+              if (error.status === 400 && error.error?.details?.message) {
+                errorMessage =
+                  error.error.details.message +
+                  ". Vous devez d'abord supprimer les données associées.";
+              } else if (error.status === 404) {
+                errorMessage = 'Vente non trouvée';
+              } else if (error.status === 500) {
+                errorMessage = 'Erreur serveur lors de la suppression';
+              } else if (error.error?.error) {
+                errorMessage = error.error.error;
+              }
+
+              this.showToast(errorMessage, 'error');
+            },
+          });
+        }
       });
-    }
   }
 
   saveVente() {
