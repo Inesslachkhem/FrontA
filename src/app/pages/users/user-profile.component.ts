@@ -17,6 +17,7 @@ import {
   styleUrls: ['./user-profile.component.css'],
 })
 export class UserProfileComponent implements OnInit {
+  isDarkMode: boolean = false;
   currentUser: User | null = null;
   isEditing = false;
   isLoading = false;
@@ -41,6 +42,10 @@ export class UserProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Initialize dark mode from <html> class
+    if (isPlatformBrowser(this.platformId)) {
+      this.isDarkMode = document.documentElement.classList.contains('dark');
+    }
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
       if (user) {
@@ -54,6 +59,19 @@ export class UserProfileComponent implements OnInit {
         };
       }
     });
+  }
+
+  toggleDarkMode(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.isDarkMode = !this.isDarkMode;
+      if (this.isDarkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
   }
 
   startEditing(): void {

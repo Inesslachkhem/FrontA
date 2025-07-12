@@ -56,12 +56,12 @@ export class StockService {
   }
 
   // Create new stock
-  create(stock: Stock): Observable<Stock> {
+  create(stock: any): Observable<Stock> {
     return this.http.post<Stock>(this.apiUrl, stock);
   }
 
   // Update stock
-  update(id: number, stock: Stock): Observable<void> {
+  update(id: number, stock: any): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, stock);
   }
 
@@ -85,5 +85,10 @@ export class StockService {
   // Get stock statistics
   getStatistics(): Observable<StockStatistics> {
     return this.http.get<StockStatistics>(`${this.apiUrl}/statistics`);
+  }
+
+  // Send stock alert email
+  sendStockAlert(alert: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/send-alert`, alert);
   }
 }

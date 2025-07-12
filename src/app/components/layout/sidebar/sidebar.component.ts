@@ -73,28 +73,7 @@ export class SidebarComponent implements OnInit {
       icon: 'fas fa-university',
       route: '/etablissement',
     },
-    {
-      label: 'Administration',
-      icon: 'fas fa-cog',
-      children: [
-        { label: 'Utilisateurs', icon: 'fas fa-users', route: '/users' },
-        {
-          label: 'Profil Admin',
-          icon: 'fas fa-user-shield',
-          route: '/admin/profile',
-        },
-        {
-          label: 'Statistiques',
-          icon: 'fas fa-chart-bar',
-          route: '/admin/stats',
-        },
-        {
-          label: 'Paramètres',
-          icon: 'fas fa-sliders-h',
-          route: '/admin/settings',
-        },
-      ],
-    },
+    { label: 'Utilisateurs', icon: 'fas fa-users', route: '/users' },
   ];
 
   constructor(
@@ -150,16 +129,17 @@ export class SidebarComponent implements OnInit {
 
   getSidebarClasses(): string {
     let classes = '';
-    
+
     if (this.isMobile) {
       // Mobile: fixed overlay sidebar
-      classes = 'fixed top-0 left-0 z-50 w-64 h-screen transform transition-transform duration-300';
+      classes =
+        'fixed top-0 left-0 z-50 w-64 h-screen transform transition-transform duration-300';
       classes += this.isMobileOpen ? ' translate-x-0' : ' -translate-x-full';
     } else {
       // Desktop: normal sidebar with collapse
       classes = this.isCollapsed ? 'w-16' : 'w-64';
     }
-    
+
     return classes;
   }
 }
