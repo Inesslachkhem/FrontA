@@ -215,52 +215,52 @@ export class UserManagementComponent implements OnInit {
     }
 
     console.log('Update User DTO before conversion:', this.updateUserDto);
-    
+
     // Convert type to number to ensure proper serialization
     const updateData = {
       ...this.updateUserDto,
-      type: Number(this.updateUserDto.type)
+      type: Number(this.updateUserDto.type),
     };
-    
+
     console.log('Update User DTO after conversion:', updateData);
 
     this.isUpdating = true;
-    this.userService
-      .updateUser(this.selectedUser.id, updateData)
-      .subscribe({
-        next: () => {
-          this.showSuccess('Utilisateur mis à jour avec succès');
-          this.closeEditForm();
-          this.loadUsers();
-          this.loadActiveUsers();
-          this.loadUserStats();
-          this.isUpdating = false;
-        },
-        error: (error) => {
-          console.error('Update user error:', error);
-          if (error.error && typeof error.error === 'object') {
-            // Handle validation errors
-            const errorDetails = error.error;
-            console.log('Error details:', errorDetails);
-            
-            if (errorDetails.errors) {
-              const messages: string[] = [];
-              for (const key in errorDetails.errors) {
-                const errors = errorDetails.errors[key];
-                messages.push(...errors);
-              }
-              this.showError(messages.join('\n'));
-            } else if (errorDetails.message) {
-              this.showError('Erreur lors de la mise à jour: ' + errorDetails.message);
-            } else {
-              this.showError('Erreur lors de la mise à jour: ' + error.message);
+    this.userService.updateUser(this.selectedUser.id, updateData).subscribe({
+      next: () => {
+        this.showSuccess('Utilisateur mis à jour avec succès');
+        this.closeEditForm();
+        this.loadUsers();
+        this.loadActiveUsers();
+        this.loadUserStats();
+        this.isUpdating = false;
+      },
+      error: (error) => {
+        console.error('Update user error:', error);
+        if (error.error && typeof error.error === 'object') {
+          // Handle validation errors
+          const errorDetails = error.error;
+          console.log('Error details:', errorDetails);
+
+          if (errorDetails.errors) {
+            const messages: string[] = [];
+            for (const key in errorDetails.errors) {
+              const errors = errorDetails.errors[key];
+              messages.push(...errors);
             }
+            this.showError(messages.join('\n'));
+          } else if (errorDetails.message) {
+            this.showError(
+              'Erreur lors de la mise à jour: ' + errorDetails.message
+            );
           } else {
             this.showError('Erreur lors de la mise à jour: ' + error.message);
           }
-          this.isUpdating = false;
-        },
-      });
+        } else {
+          this.showError('Erreur lors de la mise à jour: ' + error.message);
+        }
+        this.isUpdating = false;
+      },
+    });
   }
 
   // Delete user method
@@ -473,5 +473,100 @@ export class UserManagementComponent implements OnInit {
   canDeleteUser(user: User): boolean {
     const currentUser = this.authService.currentUserValue;
     return currentUser?.type === UserType.Admin && currentUser?.id !== user.id;
+  }
+
+  // New methods for enhanced functionality
+  reactivateUser(user: User): void {
+    if (
+      confirm(
+        `Êtes-vous sûr de vouloir réactiver l'utilisateur ${user.prenom} ${user.nom} ?`
+      )
+    ) {
+      const updateData = {
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        password: '', // Empty password to keep existing
+        type: Number(user.type),
+        isActive: true,
+      };
+
+      this.userService.updateUser(user.id, updateData).subscribe({
+        next: () => {
+          this.showSuccess('Utilisateur réactivé avec succès');
+          this.loadUsers();
+          this.loadActiveUsers();
+          this.loadUserStats();
+        },
+        error: (error) => {
+          this.showError('Erreur lors de la réactivation: ' + error.message);
+        },
+      });
+    }
+  }
+
+  viewUserDetails(user: User): void {
+    // You can implement a modal or navigation to user details page
+    this.showInfo(
+      `Détails de l'utilisateur: ${user.prenom} ${user.nom}\n` +
+        `Email: ${user.email}\n` +
+        `Type: ${this.getUserTypeDisplay(user.type)}\n` +
+        `Statut: ${user.isActive ? 'Actif' : 'Inactif'}\n` +
+        `Créé le: ${this.formatDate(user.createdAt)}\n` +
+        `Dernière connexion: ${
+          user.lastLoginAt ? this.formatDate(user.lastLoginAt) : 'Jamais'
+        }`
+    );
+  }
+
+  exportUsers(): void {
+    try {
+      // Create CSV content
+      const headers = [
+        'ID',
+        'Nom',
+        'Prénom',
+        'Email',
+        'Type',
+        'Statut',
+        'Créé le',
+        'Dernière connexion',
+      ];
+      const csvContent = [
+        headers.join(','),
+        ...this.users.map((user) =>
+          [
+            user.id,
+            `"${user.nom}"`,
+            `"${user.prenom}"`,
+            `"${user.email}"`,
+            `"${this.getUserTypeDisplay(user.type)}"`,
+            user.isActive ? 'Actif' : 'Inactif',
+            `"${this.formatDate(user.createdAt)}"`,
+            `"${
+              user.lastLoginAt ? this.formatDate(user.lastLoginAt) : 'Jamais'
+            }"`,
+          ].join(',')
+        ),
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute(
+        'download',
+        `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`
+      );
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      this.showSuccess('Export des utilisateurs réussi');
+    } catch (error) {
+      this.showError("Erreur lors de l'export: " + error);
+    }
   }
 }
