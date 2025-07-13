@@ -1,4 +1,4 @@
-import { Article } from './article.model';
+import { Stock } from './stock.model';
 
 export interface Vente {
   id: number;
@@ -12,6 +12,6 @@ export interface Vente {
   ca_Mensuel_TND: number;
   profit_Mensuel_TND: number;
   date_Derniere_Vente: Date;
-  articleId: number;
-  article?: Article;
+  stockId: number;
+  stock?: Stock;
 }

@@ -50,6 +50,34 @@
           </button>
 
           <button
+            class="group relative bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
+          >
+            <div class="flex items-center">
+              <i
+                class="fas fa-file-excel mr-2 group-hover:animate-bounce transition-transform duration-300"
+              ></i>
+              Exporter Excel
+            </div>
+            <div
+              class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            ></div>
+          </button>
+
+          <button
+            class="group relative bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
+          >
+            <div class="flex items-center">
+              <i
+                class="fas fa-sync-alt mr-2 group-hover:animate-spin transition-transform duration-500"
+              ></i>
+              Synchroniser
+            </div>
+            <div
+              class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            ></div>
+          </button>
+
+          <button
             (click)="openGenerateModal()"
             class="group relative bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
           >
@@ -298,7 +326,7 @@
     >
       <div
         *ngFor="
-          let promotion of filteredPromotions;
+          let promotion of paginatedPromotions;
           trackBy: trackByPromotionId
         "
         class="group backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
@@ -480,6 +508,100 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div
+      *ngIf="!loading && filteredPromotions.length > 0"
+      class="mt-8 backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-6"
+    >
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <!-- Pagination Info -->
+        <div class="text-sm text-gray-600 dark:text-gray-400 font-poppins">
+          Affichage de {{ getStartIndex() }} à {{ getEndIndex() }} sur
+          {{ filteredPromotions.length }} promotions
+        </div>
+
+        <!-- Page Size Selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400 font-poppins">
+            Promotions par page:
+          </span>
+          <select
+            [(ngModel)]="pageSize"
+            (change)="onPageSizeChange()"
+            class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-poppins text-sm"
+          >
+            <option value="8">8</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+            <option value="24">24</option>
+          </select>
+        </div>
+
+        <!-- Pagination Buttons -->
+        <div class="flex items-center gap-2">
+          <!-- First Page -->
+          <button
+            (click)="goToPage(1)"
+            [disabled]="currentPage === 1"
+            class="group relative px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-gray-700 dark:text-gray-300"
+            title="Première page"
+          >
+            <i
+              class="fas fa-angle-double-left group-hover:scale-110 transition-transform duration-200"
+            ></i>
+          </button>
+
+          <!-- Previous Page -->
+          <button
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="group relative px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-gray-700 dark:text-gray-300 font-poppins"
+          >
+            <i
+              class="fas fa-chevron-left mr-2 group-hover:-translate-x-1 transition-transform duration-200"
+            ></i>
+            Précédent
+          </button>
+
+          <!-- Page Numbers -->
+          <div class="flex items-center gap-1">
+            <button
+              *ngFor="let page of getVisiblePages()"
+              (click)="goToPage(page)"
+              [class]="getPageButtonClass(page)"
+              class="px-3 py-2 rounded-lg transition-all duration-300 font-poppins min-w-[2.5rem] text-sm"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <!-- Next Page -->
+          <button
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="group relative px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-gray-700 dark:text-gray-300 font-poppins"
+          >
+            Suivant
+            <i
+              class="fas fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform duration-200"
+            ></i>
+          </button>
+
+          <!-- Last Page -->
+          <button
+            (click)="goToPage(totalPages)"
+            [disabled]="currentPage === totalPages"
+            class="group relative px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-gray-700 dark:text-gray-300"
+            title="Dernière page"
+          >
+            <i
+              class="fas fa-angle-double-right group-hover:scale-110 transition-transform duration-200"
+            ></i>
+          </button>
         </div>
       </div>
     </div>

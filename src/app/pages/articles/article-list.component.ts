@@ -187,6 +187,14 @@ import { Categorie } from '../../models/categorie.model';
               Importer CSV
             </button>
             <button
+              class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
+            >
+              <i
+                class="fas fa-sync-alt group-hover:animate-spin transition-transform duration-500"
+              ></i>
+              Synchroniser
+            </button>
+            <button
               (click)="openAddModal()"
               class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl flex items-center gap-2 shadow-lg transition-all duration-300"
             >

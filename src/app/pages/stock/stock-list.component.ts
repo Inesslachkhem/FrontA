@@ -79,6 +79,19 @@ export interface StockAlert {
                   class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 ></div>
               </button>
+              <button
+                class="group relative bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
+              >
+                <div class="flex items-center">
+                  <i
+                    class="fas fa-sync-alt mr-2 group-hover:animate-spin transition-transform duration-500"
+                  ></i>
+                  Synchroniser
+                </div>
+                <div
+                  class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                ></div>
+              </button>
             </div>
           </div>
         </div>
@@ -357,7 +370,7 @@ export interface StockAlert {
                 class="bg-white/50 dark:bg-gray-800/50 divide-y divide-gray-200 dark:divide-gray-700"
               >
                 <tr
-                  *ngFor="let stock of filteredStocks"
+                  *ngFor="let stock of paginatedStocks"
                   class="hover:bg-blue-50/70 dark:hover:bg-gray-700/70 transition-all duration-200 group"
                 >
                   <td class="px-6 py-4 whitespace-nowrap">
@@ -447,6 +460,73 @@ export interface StockAlert {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div
+          *ngIf="paginatedStocks.length > 0"
+          class="backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-6 mt-8"
+        >
+          <div
+            class="flex flex-col sm:flex-row justify-between items-center gap-4"
+          >
+            <!-- Results Info -->
+            <div
+              class="text-sm text-gray-700 dark:text-gray-300 font-medium font-poppins"
+            >
+              Affichage de {{ getStartIndex() }} à {{ getEndIndex() }} sur
+              {{ filteredStocks.length }} résultats
+            </div>
+
+            <!-- Page Size Selector -->
+            <div class="flex items-center gap-2">
+              <span
+                class="text-sm text-gray-700 dark:text-gray-300 font-medium font-poppins"
+                >Afficher:</span
+              >
+              <select
+                [(ngModel)]="pageSize"
+                (change)="changePageSize(pageSize)"
+                class="px-3 py-2 bg-white/80 dark:bg-gray-700/80 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium font-poppins focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option [value]="5">5</option>
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+              </select>
+              <span
+                class="text-sm text-gray-700 dark:text-gray-300 font-medium font-poppins"
+                >par page</span
+              >
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="flex items-center gap-2">
+              <button
+                (click)="previousPage()"
+                [disabled]="currentPage === 1"
+                class="group relative px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-medium font-poppins transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:opacity-50 shadow-lg hover:shadow-xl"
+              >
+                <i class="fas fa-chevron-left mr-2"></i>
+                Précédent
+              </button>
+
+              <span
+                class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium font-poppins"
+              >
+                Page {{ currentPage }} sur {{ totalPages }}
+              </span>
+
+              <button
+                (click)="nextPage()"
+                [disabled]="currentPage === totalPages"
+                class="group relative px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-medium font-poppins transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:opacity-50 shadow-lg hover:shadow-xl"
+              >
+                Suivant
+                <i class="fas fa-chevron-right ml-2"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1774,13 +1854,14 @@ export class StockListComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private notificationService = inject(NotificationService);
   private viewContainerRef = inject(ViewContainerRef);
-  
+
   // API URL
   private apiUrl = 'http://localhost:5256/api/Stock';
 
   // Component properties
   stocks: Stock[] = [];
   filteredStocks: Stock[] = [];
+  paginatedStocks: Stock[] = [];
   articles: Article[] = [];
   depots: Depot[] = [];
   searchTerm: string = '';
@@ -1788,6 +1869,11 @@ export class StockListComponent implements OnInit {
   maxValue: number = 0;
   minQuantity: number = 0;
   maxQuantity: number = 0;
+
+  // Pagination properties
+  currentPage = 1;
+  pageSize = 10;
+  totalPages = 1;
 
   // Modal states
   isEditing: boolean = false;
@@ -1887,6 +1973,48 @@ export class StockListComponent implements OnInit {
     }
 
     this.filteredStocks = filtered;
+    this.updatePagination();
+  }
+
+  updatePagination() {
+    this.totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
+    this.currentPage = Math.min(this.currentPage, this.totalPages || 1);
+
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedStocks = this.filteredStocks.slice(startIndex, endIndex);
+  }
+
+  // Pagination methods
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
+    }
+  }
+
+  changePageSize(newPageSize: number) {
+    this.pageSize = newPageSize;
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  getStartIndex(): number {
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(
+      this.currentPage * this.pageSize,
+      this.filteredStocks.length
+    );
   }
 
   // Modal management

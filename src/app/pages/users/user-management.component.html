@@ -9,16 +9,16 @@
     </p>
   </div>
 
-  <!-- Messages -->
+  <!-- Messages (kept for backwards compatibility but hidden) -->
   <div
-    *ngIf="errorMessage"
-    class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md"
+    *ngIf="false"
+    class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md z-50"
   >
     {{ errorMessage }}
   </div>
   <div
-    *ngIf="successMessage"
-    class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md"
+    *ngIf="false"
+    class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md z-50"
   >
     {{ successMessage }}
   </div>
@@ -491,6 +491,7 @@
               name="type"
               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
+              <option value="" disabled>Sélectionner un type...</option>
               <option [value]="UserType.Admin">
                 {{ getUserTypeDisplay(UserType.Admin) }}
               </option>
@@ -672,3 +673,159 @@
     </div>
   </div>
 </div>
+
+<!-- Toast Notification Container -->
+<div class="fixed top-4 right-4 z-[9999] max-w-sm w-full space-y-3">
+  <div
+    *ngFor="let toast of toasts; trackBy: trackByToastId"
+    class="transform transition-all duration-300 ease-in-out"
+    [class.translate-x-0]="toast.isVisible"
+    [class.opacity-100]="toast.isVisible"
+    [class.translate-x-full]="!toast.isVisible"
+    [class.opacity-0]="!toast.isVisible"
+  >
+    <div
+      class="relative backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-bounce-in"
+      [ngClass]="{
+        'bg-green-500/90 dark:bg-green-600/90': toast.type === 'success',
+        'bg-red-500/90 dark:bg-red-600/90': toast.type === 'error',
+        'bg-blue-500/90 dark:bg-blue-600/90': toast.type === 'info',
+        'bg-yellow-500/90 dark:bg-yellow-600/90': toast.type === 'warning'
+      }"
+    >
+      <!-- Toast Content -->
+      <div class="p-4">
+        <div class="flex items-start">
+          <!-- Icon -->
+          <div class="flex-shrink-0 mr-3">
+            <div
+              class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center animate-pulse"
+            >
+              <i
+                class="text-white text-lg"
+                [ngClass]="{
+                  'fas fa-check-circle': toast.type === 'success',
+                  'fas fa-times-circle': toast.type === 'error',
+                  'fas fa-info-circle': toast.type === 'info',
+                  'fas fa-exclamation-triangle': toast.type === 'warning'
+                }"
+              ></i>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <h4
+              class="text-sm font-bold text-white mb-1 animate-slide-in-right"
+            >
+              {{ toast.title }}
+            </h4>
+            <p
+              class="text-sm text-white/90 break-words animate-slide-in-right animation-delay-100"
+            >
+              {{ toast.message }}
+            </p>
+          </div>
+
+          <!-- Close Button -->
+          <button
+            (click)="removeToast(toast.id)"
+            class="flex-shrink-0 ml-2 p-1 rounded-full hover:bg-white/20 transition-colors duration-200 group"
+          >
+            <i
+              class="fas fa-times text-white text-sm group-hover:scale-110 transition-transform duration-200"
+            ></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div
+        class="absolute bottom-0 left-0 h-1 bg-white/30 rounded-full transition-all duration-300"
+        [style.width.%]="100"
+        [style.animation]="
+          'toast-progress ' + (toast.duration || 5000) + 'ms linear forwards'
+        "
+      ></div>
+
+      <!-- Decorative elements -->
+      <div
+        class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10 animate-ping-slow"
+      ></div>
+      <div
+        class="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full -ml-8 -mb-8 animate-pulse"
+      ></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add custom styles -->
+<style>
+  @keyframes bounce-in {
+    0% {
+      transform: translateX(100%) scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: translateX(-10px) scale(1.05);
+    }
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-right {
+    0% {
+      transform: translateX(20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes toast-progress {
+    0% {
+      width: 100%;
+    }
+    100% {
+      width: 0%;
+    }
+  }
+
+  @keyframes ping-slow {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.1;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.3;
+    }
+  }
+
+  .animate-bounce-in {
+    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-ping-slow {
+    animation: ping-slow 3s infinite;
+  }
+
+  /* Smooth hover effects */
+  .backdrop-blur-xl:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+</style>

@@ -303,6 +303,14 @@ import { ConfirmationService } from '../../services/confirmation.service';
               <span>Importer CSV</span>
             </button>
             <button
+              class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 group flex items-center space-x-2 shadow-lg hover:shadow-xl"
+            >
+              <i
+                class="fas fa-sync-alt group-hover:animate-spin transition-transform duration-500"
+              ></i>
+              <span>Synchroniser</span>
+            </button>
+            <button
               (click)="openAddModal()"
               class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
             >

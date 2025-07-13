@@ -13,6 +13,7 @@ import { Article } from '../../models/article.model';
 import { Vente } from '../../models/vente.model';
 import { VenteService } from '../../services/vente.service';
 import { ArticleService } from '../../services/article.service';
+import { StockService } from '../../services/stock.service';
 import { ModalService } from '../../services/modal.service';
 import { ConfirmationService } from '../../services/confirmation.service';
 
@@ -55,6 +56,19 @@ import { ConfirmationService } from '../../services/confirmation.service';
                 <div class="flex items-center">
                   <i class="fas fa-upload mr-2 group-hover:animate-bounce"></i>
                   Importer CSV
+                </div>
+                <div
+                  class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                ></div>
+              </button>
+              <button
+                class="group relative bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
+              >
+                <div class="flex items-center">
+                  <i
+                    class="fas fa-sync-alt mr-2 group-hover:animate-spin transition-transform duration-500"
+                  ></i>
+                  Synchroniser
                 </div>
                 <div
                   class="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -400,10 +414,10 @@ import { ConfirmationService } from '../../services/confirmation.service';
                         <div
                           class="text-sm font-bold text-gray-900 dark:text-white font-poppins"
                         >
-                          {{ vente.articleId }}
+                          {{ getArticleId(vente) || 'N/A' }}
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">
-                          {{ vente.article?.codeArticle || 'N/A' }}
+                          {{ getArticleCode(vente) }}
                         </div>
                       </div>
                     </div>
@@ -465,7 +479,6 @@ import { ConfirmationService } from '../../services/confirmation.service';
           </div>
         </div>
 
-         
         <div
           class="backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-6 mt-8"
         >
@@ -882,20 +895,21 @@ import { ConfirmationService } from '../../services/confirmation.service';
                     Article <span class="text-red-500">*</span>
                   </label>
                   <select
-                    [(ngModel)]="currentVente.articleId"
-                    name="articleId"
+                    [(ngModel)]="selectedStockId"
+                    name="stockId"
                     required
-                    (change)="onArticleSelected()"
+                    (change)="onStockSelected()"
                     class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
                   >
                     <option value="">Sélectionner un article</option>
                     <option
-                      *ngFor="let article of articles"
-                      [value]="article.id"
+                      *ngFor="let stock of availableStocks"
+                      [value]="stock.id"
                     >
-                      {{ article.codeArticle }} - {{ article.libelle }} ({{
-                        article.prix_Vente_TND | currency : 'TND'
-                      }})
+                      {{ stock.article?.codeArticle }} -
+                      {{ stock.article?.libelle }} ({{
+                        stock.article?.prix_Vente_TND | currency : 'TND'
+                      }}) - Stock: {{ stock.quantitePhysique }}
                     </option>
                   </select>
                 </div>
@@ -1045,6 +1059,8 @@ export class VenteListComponent implements OnInit {
   // Current vente for add/edit
   currentVente: Partial<Vente> = {};
   unitPrice = 0;
+  selectedStockId: number | null = null;
+  availableStocks: any[] = [];
 
   // Import
   selectedFile: File | null = null;
@@ -1062,6 +1078,7 @@ export class VenteListComponent implements OnInit {
   constructor(
     private venteService: VenteService,
     private articleService: ArticleService,
+    private stockService: StockService,
     private modalService: ModalService,
     private viewContainerRef: ViewContainerRef,
     private confirmationService: ConfirmationService
@@ -1070,6 +1087,7 @@ export class VenteListComponent implements OnInit {
   ngOnInit() {
     this.loadVentes();
     this.loadArticles();
+    this.loadStocks();
   }
   loadVentes() {
     console.log('Loading ventes...');
@@ -1108,6 +1126,20 @@ export class VenteListComponent implements OnInit {
     });
   }
 
+  loadStocks() {
+    this.stockService.getAll().subscribe({
+      next: (stocks) => {
+        console.log('Stocks loaded:', stocks);
+        this.availableStocks = stocks.filter(
+          (stock) => stock.article && stock.quantitePhysique > 0
+        );
+      },
+      error: (error) => {
+        console.error('Error loading stocks:', error);
+      },
+    });
+  }
+
   filterVentes() {
     let filtered = [...this.ventes];
 
@@ -1116,8 +1148,8 @@ export class VenteListComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
         (vente) =>
-          vente.article?.libelle?.toLowerCase().includes(term) ||
-          vente.article?.codeArticle?.toLowerCase().includes(term)
+          this.getArticleLibelle(vente).toLowerCase().includes(term) ||
+          this.getArticleCode(vente).toLowerCase().includes(term)
       );
     } // Date range filter
     if (this.startDate) {
@@ -1164,6 +1196,7 @@ export class VenteListComponent implements OnInit {
   openAddModal() {
     this.isEditMode = false;
     this.currentVente = {};
+    this.selectedStockId = null;
     this.unitPrice = 0;
     this.modalService.openModal(this.venteModalTemplate, this.viewContainerRef);
   }
@@ -1186,6 +1219,7 @@ export class VenteListComponent implements OnInit {
   editVente(vente: Vente) {
     this.isEditMode = true;
     this.currentVente = { ...vente };
+    this.selectedStockId = vente.stockId;
     this.unitPrice = this.getUnitPrice(vente);
     this.modalService.openModal(this.venteModalTemplate, this.viewContainerRef);
   }
@@ -1233,6 +1267,11 @@ export class VenteListComponent implements OnInit {
       this.currentVente.date = new Date();
     }
 
+    // Ensure stockId is set from selectedStockId
+    if (this.selectedStockId) {
+      this.currentVente.stockId = this.selectedStockId;
+    }
+
     if (this.isEditMode && this.currentVente.id) {
       this.venteService
         .update(this.currentVente.id, this.currentVente as Vente)
@@ -1270,16 +1309,18 @@ export class VenteListComponent implements OnInit {
     setTimeout(() => {
       this.isEditMode = false;
       this.currentVente = {};
+      this.selectedStockId = null;
       this.unitPrice = 0;
     }, 300);
   }
 
-  onArticleSelected() {
-    const selectedArticle = this.articles.find(
-      (a) => a.id === this.currentVente.articleId
+  onStockSelected() {
+    const selectedStock = this.availableStocks.find(
+      (s) => s.id === this.selectedStockId
     );
-    if (selectedArticle) {
-      this.unitPrice = selectedArticle.prix_Vente_TND;
+    if (selectedStock && selectedStock.article) {
+      this.currentVente.stockId = this.selectedStockId || 0;
+      this.unitPrice = selectedStock.article.prix_Vente_TND;
       this.calculateTotal();
     }
   }
@@ -1419,6 +1460,23 @@ export class VenteListComponent implements OnInit {
       (total, vente) => total + vente.quantiteFacturee,
       0
     );
+  }
+
+  // Helper methods to access article information through stock
+  getArticle(vente: Vente): any {
+    return vente.stock?.article;
+  }
+
+  getArticleId(vente: Vente): number | undefined {
+    return vente.stock?.articleId;
+  }
+
+  getArticleLibelle(vente: Vente): string {
+    return vente.stock?.article?.libelle || 'N/A';
+  }
+
+  getArticleCode(vente: Vente): string {
+    return vente.stock?.article?.codeArticle || 'N/A';
   }
 
   trackByVente(index: number, vente: Vente): number {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import {
   Conversation,
   Message,
@@ -67,13 +68,52 @@ export class ChatService {
   }
 
   // File uploads
-  uploadFileMessage(
-    formData: FormData
-  ): Observable<{ fileUrl: string; fileName: string }> {
-    return this.http.post<{ fileUrl: string; fileName: string }>(
-      `${this.apiUrl}/chat/upload`,
-      formData
+  uploadFileMessage(formData: FormData): Observable<{
+    fileUrl: string;
+    fileName: string;
+    fileSize?: number;
+    contentType?: string;
+  }> {
+    console.log(
+      '🌐 ChatService: Starting file upload to:',
+      `${this.apiUrl}/chat/upload`
     );
+
+    // Log FormData contents for debugging
+    console.log('📝 FormData contents:');
+    for (let pair of (formData as any).entries()) {
+      if (pair[1] instanceof File) {
+        console.log(
+          `  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`
+        );
+      } else {
+        console.log(`  ${pair[0]}: ${pair[1]}`);
+      }
+    }
+
+    return this.http
+      .post<{
+        fileUrl: string;
+        fileName: string;
+        fileSize?: number;
+        contentType?: string;
+      }>(`${this.apiUrl}/chat/upload`, formData)
+      .pipe(
+        tap((response: any) => {
+          console.log('🌐 ChatService: Upload successful:', response);
+        }),
+        catchError((error: any) => {
+          console.error('🌐 ChatService: Upload failed:', error);
+          console.error('🌐 Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url,
+            message: error.message,
+            error: error.error,
+          });
+          throw error;
+        })
+      );
   }
 
   // Utility method to get full file URL

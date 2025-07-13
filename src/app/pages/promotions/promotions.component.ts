@@ -98,6 +98,18 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     { value: 'product_name', label: 'Nom du Produit' },
   ];
 
+  // Pagination properties
+  currentPage = 1;
+  pageSize = 8;
+  totalPages = 1;
+
+  // Computed property for paginated promotions
+  get paginatedPromotions(): Promotion[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filteredPromotions.slice(start, end);
+  }
+
   constructor(
     private promotionService: PromotionService,
     private promotionAiService: PromotionAiService
@@ -292,6 +304,7 @@ export class PromotionsComponent implements OnInit, OnDestroy {
     });
 
     this.filteredPromotions = filtered;
+    this.updatePagination();
   }
 
   // Statistics calculation
@@ -722,5 +735,60 @@ export class PromotionsComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
       });
+  }
+
+  // Pagination methods
+  updatePagination(): void {
+    this.totalPages = Math.ceil(this.filteredPromotions.length / this.pageSize);
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = Math.max(1, this.totalPages);
+    }
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  getStartIndex(): number {
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(
+      this.currentPage * this.pageSize,
+      this.filteredPromotions.length
+    );
+  }
+
+  getVisiblePages(): number[] {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    return Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i
+    );
+  }
+
+  getPageButtonClass(page: number): string {
+    if (page === this.currentPage) {
+      return 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600 dark:border-pink-600 shadow-lg';
+    }
+    return 'bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600';
   }
 }

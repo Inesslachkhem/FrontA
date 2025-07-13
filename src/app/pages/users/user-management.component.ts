@@ -12,6 +12,16 @@ import {
   getUserTypeDisplayName,
 } from '../../models/user.model';
 
+// Toast interface
+interface Toast {
+  id: number;
+  type: 'success' | 'error' | 'info' | 'warning';
+  title: string;
+  message: string;
+  duration?: number;
+  isVisible: boolean;
+}
+
 @Component({
   selector: 'app-user-management',
   standalone: true,
@@ -35,7 +45,7 @@ export class UserManagementComponent implements OnInit {
     prenom: '',
     email: '',
     password: '',
-    type: null as any, // Initialiser à null pour forcer la sélection
+    type: undefined as any, // Undefined to force selection
   };
 
   updateUserDto: UpdateUserDto = {
@@ -55,6 +65,10 @@ export class UserManagementComponent implements OnInit {
   // Error handling
   errorMessage = '';
   successMessage = '';
+
+  // Toast system
+  toasts: Toast[] = [];
+  private toastId = 0;
 
   // Enums for template
   UserType = UserType;
@@ -125,7 +139,7 @@ export class UserManagementComponent implements OnInit {
       prenom: '',
       email: '',
       password: '',
-      type: null as any, // Initialiser à null pour forcer la sélection
+      type: undefined as any, // Undefined to force selection
     };
   }
 
@@ -134,9 +148,20 @@ export class UserManagementComponent implements OnInit {
       return;
     }
 
+    // Ensure the type is converted to a number (enum value)
+    const userDto = {
+      ...this.createUserDto,
+      type: Number(this.createUserDto.type),
+    };
+
+    console.log('Creating user with data:', userDto);
+    console.log('Original type value:', this.createUserDto.type);
+    console.log('Converted type value:', userDto.type);
+
     this.isCreating = true;
-    this.userService.createUser(this.createUserDto).subscribe({
+    this.userService.createUser(userDto).subscribe({
       next: (user) => {
+        console.log('User created successfully:', user);
         this.showSuccess('Utilisateur créé avec succès');
         this.closeCreateForm();
         this.loadUsers();
@@ -145,6 +170,7 @@ export class UserManagementComponent implements OnInit {
         this.isCreating = false;
       },
       error: (error) => {
+        console.error('Error creating user:', error);
         // Affichage détaillé des erreurs de validation backend
         if (error.error && error.error.errors) {
           const errors = error.error.errors;
@@ -188,9 +214,19 @@ export class UserManagementComponent implements OnInit {
       return;
     }
 
+    console.log('Update User DTO before conversion:', this.updateUserDto);
+    
+    // Convert type to number to ensure proper serialization
+    const updateData = {
+      ...this.updateUserDto,
+      type: Number(this.updateUserDto.type)
+    };
+    
+    console.log('Update User DTO after conversion:', updateData);
+
     this.isUpdating = true;
     this.userService
-      .updateUser(this.selectedUser.id, this.updateUserDto)
+      .updateUser(this.selectedUser.id, updateData)
       .subscribe({
         next: () => {
           this.showSuccess('Utilisateur mis à jour avec succès');
@@ -201,7 +237,27 @@ export class UserManagementComponent implements OnInit {
           this.isUpdating = false;
         },
         error: (error) => {
-          this.showError('Erreur lors de la mise à jour: ' + error.message);
+          console.error('Update user error:', error);
+          if (error.error && typeof error.error === 'object') {
+            // Handle validation errors
+            const errorDetails = error.error;
+            console.log('Error details:', errorDetails);
+            
+            if (errorDetails.errors) {
+              const messages: string[] = [];
+              for (const key in errorDetails.errors) {
+                const errors = errorDetails.errors[key];
+                messages.push(...errors);
+              }
+              this.showError(messages.join('\n'));
+            } else if (errorDetails.message) {
+              this.showError('Erreur lors de la mise à jour: ' + errorDetails.message);
+            } else {
+              this.showError('Erreur lors de la mise à jour: ' + error.message);
+            }
+          } else {
+            this.showError('Erreur lors de la mise à jour: ' + error.message);
+          }
           this.isUpdating = false;
         },
       });
@@ -242,7 +298,7 @@ export class UserManagementComponent implements OnInit {
     }
 
     if (!this.createUserDto.email?.trim()) {
-      this.showError('L\'email est obligatoire');
+      this.showError("L'email est obligatoire");
       return false;
     }
 
@@ -252,14 +308,24 @@ export class UserManagementComponent implements OnInit {
     }
 
     // Vérification spécifique pour le type d'utilisateur
-    if (this.createUserDto.type === undefined || this.createUserDto.type === null || isNaN(this.createUserDto.type)) {
-      this.showError('Veuillez sélectionner un type d\'utilisateur');
+    if (
+      this.createUserDto.type === undefined ||
+      this.createUserDto.type === null
+    ) {
+      this.showError("Veuillez sélectionner un type d'utilisateur");
+      return false;
+    }
+
+    // Ensure type is a valid enum value
+    const typeNumber = Number(this.createUserDto.type);
+    if (isNaN(typeNumber) || !Object.values(UserType).includes(typeNumber)) {
+      this.showError("Type d'utilisateur invalide");
       return false;
     }
 
     // Validation du format email
     if (!this.isValidEmail(this.createUserDto.email)) {
-      this.showError('Format d\'email invalide');
+      this.showError("Format d'email invalide");
       return false;
     }
 
@@ -279,6 +345,22 @@ export class UserManagementComponent implements OnInit {
       !this.updateUserDto.email
     ) {
       this.showError('Les champs nom, prénom et email sont obligatoires');
+      return false;
+    }
+
+    // Vérification spécifique pour le type d'utilisateur
+    if (
+      this.updateUserDto.type === undefined ||
+      this.updateUserDto.type === null
+    ) {
+      this.showError("Veuillez sélectionner un type d'utilisateur");
+      return false;
+    }
+
+    // Ensure type is a valid enum value
+    const typeNumber = Number(this.updateUserDto.type);
+    if (isNaN(typeNumber) || !Object.values(UserType).includes(typeNumber)) {
+      this.showError("Type d'utilisateur invalide");
       return false;
     }
 
@@ -305,16 +387,67 @@ export class UserManagementComponent implements OnInit {
     return getUserTypeDisplayName(type);
   }
 
+  // Toast system methods
+  showToast(
+    type: 'success' | 'error' | 'info' | 'warning',
+    title: string,
+    message: string,
+    duration: number = 5000
+  ): void {
+    const toast: Toast = {
+      id: ++this.toastId,
+      type,
+      title,
+      message,
+      duration,
+      isVisible: true,
+    };
+
+    this.toasts.push(toast);
+
+    // Auto-remove toast after duration
+    setTimeout(() => {
+      this.removeToast(toast.id);
+    }, duration);
+  }
+
+  removeToast(id: number): void {
+    const index = this.toasts.findIndex((toast) => toast.id === id);
+    if (index > -1) {
+      this.toasts[index].isVisible = false;
+      // Remove from array after animation completes
+      setTimeout(() => {
+        this.toasts.splice(index, 1);
+      }, 300);
+    }
+  }
+
   showError(message: string): void {
+    this.showToast('error', 'Erreur', message);
+    // Keep old behavior for compatibility
     this.errorMessage = message;
     this.successMessage = '';
     setTimeout(() => this.clearMessages(), 5000);
   }
 
   showSuccess(message: string): void {
+    this.showToast('success', 'Succès', message);
+    // Keep old behavior for compatibility
     this.successMessage = message;
     this.errorMessage = '';
     setTimeout(() => this.clearMessages(), 5000);
+  }
+
+  showInfo(message: string): void {
+    this.showToast('info', 'Information', message);
+  }
+
+  showWarning(message: string): void {
+    this.showToast('warning', 'Attention', message);
+  }
+
+  trackByToastId(index: number, toast: Toast): number {
+    return toast.id;
   }
 
   clearMessages(): void {

@@ -30,6 +30,7 @@ import {
 export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
   @ViewChild('messageInput') messageInput!: ElementRef;
+  @ViewChild('fileInput') fileInput!: ElementRef;
 
   // Component state
   conversations: Conversation[] = [];
@@ -70,6 +71,24 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'text/plain',
     'text/csv',
+    'application/csv',
+    'application/vnd.ms-excel', // Another possible CSV type
+  ];
+
+  // Allowed file extensions (as fallback for CSV and other files)
+  allowedFileExtensions = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp',
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.txt',
+    '.csv',
   ];
 
   // Typing indicator
@@ -310,9 +329,17 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     )
       return;
 
+    console.log(
+      '💬 Send message called - Text:',
+      this.messageText.trim(),
+      'Files:',
+      this.selectedFiles.length
+    );
+
     try {
       // Send text message if there's text
       if (this.messageText.trim()) {
+        console.log('📝 Sending text message...');
         await this.signalRService.sendMessage(
           this.selectedConversation.id,
           this.messageText.trim(),
@@ -321,8 +348,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
 
       // Send file attachments
-      for (const file of this.selectedFiles) {
-        await this.sendFileMessage(file);
+      if (this.selectedFiles.length > 0) {
+        console.log('📎 Sending', this.selectedFiles.length, 'file(s)...');
+        for (const file of this.selectedFiles) {
+          await this.sendFileMessage(file);
+        }
       }
 
       this.messageText = '';
@@ -332,74 +362,235 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       // Scroll to bottom after sending message
       setTimeout(() => this.scrollToBottom(), 100);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
     }
   }
 
   async sendFileMessage(file: File): Promise<void> {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append(
-        'conversationId',
-        this.selectedConversation!.id.toString()
+      console.log(
+        '🔗 Starting file upload for:',
+        file.name,
+        'Size:',
+        file.size,
+        'Type:',
+        file.type
       );
 
-      // Determine message type based on file type
-      const messageType = file.type.startsWith('image/')
-        ? MessageType.Image
-        : MessageType.File;
-
-      // Upload file and send message via chat service
-      const uploadResponse = await this.chatService
-        .uploadFileMessage(formData)
-        .toPromise();
-
-      if (uploadResponse?.fileUrl) {
-        await this.signalRService.sendMessage(
-          this.selectedConversation!.id,
-          file.name,
-          messageType,
-          uploadResponse.fileUrl,
-          file.name,
-          file.size
-        );
+      // Check if conversation is selected
+      if (!this.selectedConversation) {
+        console.error('❌ No conversation selected');
+        alert('Please select a conversation first');
+        return;
       }
-    } catch (error) {
-      console.error('Error sending file message:', error);
+
+      // Check if SignalR is connected
+      if (!this.isConnected) {
+        console.error('❌ SignalR not connected');
+        alert('Connection lost. Please refresh the page and try again.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('📤 Uploading file to server...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        conversationId: this.selectedConversation.id,
+      });
+
+      // Upload file via chat service
+      try {
+        const uploadResponse = await this.chatService
+          .uploadFileMessage(formData)
+          .toPromise();
+
+        console.log('✅ File upload successful:', uploadResponse);
+
+        if (uploadResponse?.fileUrl) {
+          // Determine message type based on file type
+          const messageType = file.type.startsWith('image/')
+            ? MessageType.Image
+            : MessageType.File;
+
+          console.log('📨 Sending message via SignalR...', {
+            conversationId: this.selectedConversation.id,
+            messageType,
+            fileUrl: uploadResponse.fileUrl,
+            fileName: file.name,
+            fileSize: file.size,
+          });
+
+          await this.signalRService.sendMessage(
+            this.selectedConversation.id,
+            file.name, // This will be the content/caption
+            messageType,
+            uploadResponse.fileUrl,
+            file.name,
+            file.size
+          );
+
+          console.log('✅ Message sent successfully via SignalR!');
+        } else {
+          console.error(
+            '❌ No file URL received from upload response:',
+            uploadResponse
+          );
+          throw new Error('Upload response missing fileUrl');
+        }
+      } catch (uploadError: any) {
+        console.error('❌ File upload failed:', uploadError);
+
+        // Provide more specific error messages
+        let errorMessage = 'Unknown error';
+
+        if (uploadError?.error) {
+          if (typeof uploadError.error === 'string') {
+            errorMessage = uploadError.error;
+          } else if (uploadError.error.error) {
+            errorMessage = uploadError.error.error;
+          } else if (uploadError.error.message) {
+            errorMessage = uploadError.error.message;
+          }
+        } else if (uploadError?.message) {
+          errorMessage = uploadError.message;
+        } else if (uploadError?.status) {
+          switch (uploadError.status) {
+            case 0:
+              errorMessage =
+                'Cannot connect to server. Please check if the backend is running.';
+              break;
+            case 401:
+              errorMessage = 'Authentication failed. Please log in again.';
+              break;
+            case 413:
+              errorMessage = 'File too large. Maximum size is 10MB.';
+              break;
+            case 415:
+              errorMessage = 'File type not supported.';
+              break;
+            case 500:
+              errorMessage = 'Server error. Please try again later.';
+              break;
+            default:
+              errorMessage = `Server error (${uploadError.status}): ${
+                uploadError.statusText || 'Unknown error'
+              }`;
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error('❌ Error in sendFileMessage:', error);
+
+      // Show user-friendly error message
+      const userMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to send file: ${userMessage}`);
     }
   }
 
   onFileSelected(event: Event): void {
+    console.log('📁 File input triggered');
     const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.addFiles(Array.from(input.files));
-      input.value = ''; // Reset input
+
+    if (!input.files || input.files.length === 0) {
+      console.log('❌ No files found in input');
+      return;
     }
+
+    console.log('📁 Files selected:', input.files.length);
+    const filesArray = Array.from(input.files);
+
+    console.log(
+      '📎 Files to process:',
+      filesArray.map((f) => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+      }))
+    );
+
+    this.addFiles(filesArray);
+
+    // Reset input to allow selecting the same file again
+    input.value = '';
   }
 
   addFiles(files: File[]): void {
+    console.log('📎 Adding files:', files.length);
     for (const file of files) {
+      console.log(
+        '🔍 Validating file:',
+        file.name,
+        'Type:',
+        file.type,
+        'Size:',
+        file.size
+      );
       if (this.validateFile(file)) {
         this.selectedFiles.push(file);
+        console.log('✅ File added to selection:', file.name);
+      } else {
+        console.log('❌ File validation failed:', file.name);
       }
     }
+    console.log('📎 Total selected files:', this.selectedFiles.length);
   }
 
   validateFile(file: File): boolean {
+    console.log('🔍 Validating file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      maxAllowed: this.maxFileSize,
+    });
+
     // Check file size
     if (file.size > this.maxFileSize) {
+      const maxSizeMB = this.maxFileSize / (1024 * 1024);
+      const fileSizeMB = file.size / (1024 * 1024);
       console.warn(
-        `File "${file.name}" is too large. Maximum size is ${
-          this.maxFileSize / (1024 * 1024)
-        }MB.`
+        `❌ File "${file.name}" is too large: ${fileSizeMB.toFixed(
+          2
+        )}MB. Maximum size is ${maxSizeMB}MB.`
+      );
+      alert(
+        `File "${file.name}" is too large (${fileSizeMB.toFixed(
+          2
+        )}MB). Maximum size allowed is ${maxSizeMB}MB.`
       );
       return false;
     }
 
-    // Check file type
-    if (!this.allowedFileTypes.includes(file.type)) {
-      console.warn(`File type "${file.type}" is not allowed.`);
+    // Get file extension
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    console.log('📋 File extension:', fileExtension);
+
+    // Check file type (MIME type OR extension)
+    const isMimeTypeAllowed = this.allowedFileTypes.includes(file.type);
+    const isExtensionAllowed =
+      this.allowedFileExtensions.includes(fileExtension);
+
+    console.log('🔍 Validation checks:', {
+      mimeType: file.type,
+      isMimeTypeAllowed,
+      extension: fileExtension,
+      isExtensionAllowed,
+    });
+
+    if (!isMimeTypeAllowed && !isExtensionAllowed) {
+      console.warn(
+        `❌ File type "${file.type}" and extension "${fileExtension}" are not allowed for file "${file.name}".`
+      );
+      console.log('📋 Allowed MIME types:', this.allowedFileTypes);
+      console.log('📋 Allowed extensions:', this.allowedFileExtensions);
+      alert(
+        `File type "${file.type}" (${fileExtension}) is not allowed. Please select an image, PDF, document, or CSV file.`
+      );
       return false;
     }
 
@@ -409,15 +600,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         (f) => f.name === file.name && f.size === file.size
       )
     ) {
-      console.warn(`File "${file.name}" is already selected.`);
+      console.warn(`⚠️ File "${file.name}" is already selected.`);
       return false;
     }
 
+    console.log('✅ File validation passed for:', file.name);
     return true;
   }
 
   removeFile(index: number): void {
     this.selectedFiles.splice(index, 1);
+  }
+
+  triggerFileInput(): void {
+    console.log('🔗 Attachment button clicked');
+    if (this.fileInput && this.fileInput.nativeElement) {
+      console.log('📁 Triggering file input...');
+      this.fileInput.nativeElement.click();
+    } else {
+      console.error('❌ File input element not found');
+    }
   }
 
   formatFileSize(bytes: number): string {
@@ -553,6 +755,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private handleNewMessage(message: Message): void {
     if (message.conversationId === this.selectedConversation?.id) {
       const wasScrolledToBottom = this.isScrolledToBottom();
+
+      // Ensure isOwnMessage is correctly set based on current user
+      message.isOwnMessage = this.currentUser
+        ? message.senderId === this.currentUser.id
+        : false;
+
       this.messages.push(message);
 
       // Only auto-scroll if user was already at bottom or it's their own message
@@ -813,5 +1021,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     } catch (error) {
       console.error('Error creating group conversation:', error);
     }
+  }
+
+  // Performance optimization for message list
+  trackMessage(index: number, message: Message): number {
+    return message.id;
   }
 }
