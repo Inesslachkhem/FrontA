@@ -1,9 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { StockService } from '../../services/stock.service';
 import { Stock } from '../../models/article.model';
 
 interface StockStatistics {
@@ -24,6 +23,8 @@ interface StockStatistics {
 })
 export class StockComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:5256/api/Stock';
 
   stocks: Stock[] = [];
   filteredStocks: Stock[] = [];
@@ -41,8 +42,6 @@ export class StockComponent implements OnInit, OnDestroy {
     averageValue: 0,
   };
 
-  constructor(private stockService: StockService) {}
-
   ngOnInit(): void {
     this.loadStocks();
     this.loadStatistics();
@@ -57,16 +56,16 @@ export class StockComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.stockService
-      .getAll()
+    this.http
+      .get<Stock[]>(this.apiUrl)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (stocks) => {
+        next: (stocks: Stock[]) => {
           this.stocks = stocks;
           this.filteredStocks = stocks;
           this.loading = false;
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error loading stocks:', error);
           this.error = 'Failed to load stock data';
           this.loading = false;
@@ -75,8 +74,8 @@ export class StockComponent implements OnInit, OnDestroy {
   }
 
   loadStatistics(): void {
-    this.stockService
-      .getStatistics()
+    this.http
+      .get<StockStatistics>(`${this.apiUrl}/statistics`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (statistics: StockStatistics) => {

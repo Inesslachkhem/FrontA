@@ -898,7 +898,7 @@ import { Categorie } from '../../models/categorie.model';
                       Annuler
                     </button>
                     <button
-                      (click)="importArticles()"
+                      (click)="showImportWarning()"
                       [disabled]="!selectedFile || importing"
                       class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-300"
                     >
@@ -1252,18 +1252,21 @@ export class ArticleListComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
-  importArticles() {
+  showImportWarning() {
     if (!this.selectedFile) return;
+
+    // Close the import modal first
+    this.closeImportModal();
 
     // Show warning confirmation using custom modal
     this.confirmationService
       .confirmDangerousAction(
-        "ATTENTION: REMPLACEMENT DES DONNEES D'ARTICLES !",
+        "⚠️ ATTENTION: REMPLACEMENT DES DONNEES D'ARTICLES !",
         `Cette action va :
 
-- Supprimer TOUS les articles existants
-- Supprimer TOUS les stocks existants  
-- Supprimer TOUTES les ventes existantes
+✗ Supprimer TOUS les articles existants
+✗ Supprimer TOUS les stocks existants  
+✗ Supprimer TOUTES les ventes existantes
 
 Et les remplacer par les donnees d'articles du fichier : ${this.selectedFile.name}
 
@@ -1274,71 +1277,77 @@ Etes-vous absolument sur de vouloir continuer ?`,
         'Oui, Remplacer Tout'
       )
       .subscribe((confirmed) => {
-        if (!confirmed) {
-          return;
+        if (confirmed) {
+          this.importArticles();
+        } else {
+          // If user cancels, reopen the import modal
+          setTimeout(() => {
+            this.openImportModal();
+          }, 300);
         }
-
-        console.log(
-          'Starting article import for file:',
-          this.selectedFile!.name
-        );
-        console.log('File size:', this.selectedFile!.size, 'bytes');
-        console.log('File type:', this.selectedFile!.type);
-
-        this.importing = true;
-        this.showToast(
-          'info',
-          'Import en cours',
-          'Import des articles en cours...'
-        );
-
-        this.articleService.importArticles(this.selectedFile!).subscribe({
-          next: (response) => {
-            console.log('Import successful:', response);
-            this.importing = false;
-            this.closeImportModal();
-            this.loadArticles();
-            this.showToast(
-              'success',
-              'Import reussi',
-              'Les articles ont ete importes avec succes'
-            );
-          },
-          error: (error) => {
-            console.error('Import error:', error);
-            this.importing = false;
-
-            let errorMessage = "Erreur lors de l'import des articles";
-            let detailedErrors: any[] = [];
-
-            if (error.status === 400) {
-              if (error.error.Details) {
-                detailedErrors = error.error.Details;
-                errorMessage = `Erreurs de validation CSV (${
-                  detailedErrors?.length || 0
-                } problemes trouves)`;
-                this.showToast('error', 'Erreurs de validation', errorMessage);
-              } else if (error.error.MissingCategories) {
-                const missingCats = error.error.MissingCategories;
-                errorMessage = `Categories manquantes : ${
-                  missingCats?.join(', ') || 'Categories inconnues'
-                }`;
-                this.showToast('error', 'Categories manquantes', errorMessage);
-
-                // Offer to auto-create the missing categories
-                this.handleMissingCategories(missingCats);
-              } else if (typeof error.error === 'string') {
-                errorMessage = error.error;
-                this.showToast('error', "Erreur d'import", errorMessage);
-              } else {
-                this.showToast('error', "Erreur d'import", errorMessage);
-              }
-            } else {
-              this.showToast('error', "Erreur d'import", errorMessage);
-            }
-          },
-        });
       });
+  }
+
+  importArticles() {
+    if (!this.selectedFile) return;
+
+    console.log('Starting article import for file:', this.selectedFile!.name);
+    console.log('File size:', this.selectedFile!.size, 'bytes');
+    console.log('File type:', this.selectedFile!.type);
+
+    this.importing = true;
+    this.showToast(
+      'info',
+      'Import en cours',
+      'Import des articles en cours...'
+    );
+
+    this.articleService.importArticles(this.selectedFile!).subscribe({
+      next: (response) => {
+        console.log('Import successful:', response);
+        this.importing = false;
+        this.selectedFile = null;
+        this.loadArticles();
+        this.showToast(
+          'success',
+          'Import reussi',
+          'Les articles ont ete importes avec succes'
+        );
+      },
+      error: (error) => {
+        console.error('Import error:', error);
+        this.importing = false;
+
+        let errorMessage = "Erreur lors de l'import des articles";
+        let detailedErrors: any[] = [];
+
+        if (error.status === 400) {
+          if (error.error.Details) {
+            detailedErrors = error.error.Details;
+            errorMessage = `Erreurs de validation CSV (${
+              detailedErrors?.length || 0
+            } problemes trouves)`;
+            this.showToast('error', 'Erreurs de validation', errorMessage);
+          } else if (error.error.MissingCategories) {
+            const missingCats = error.error.MissingCategories;
+            errorMessage = `Categories manquantes : ${
+              missingCats?.join(', ') || 'Categories inconnues'
+            }`;
+            this.showToast('error', 'Categories manquantes', errorMessage);
+
+            // Offer to auto-create the missing categories
+            this.handleMissingCategories(missingCats);
+          } else if (typeof error.error === 'string') {
+            errorMessage = error.error;
+            this.showToast('error', "Erreur d'import", errorMessage);
+          } else {
+            this.showToast('error', "Erreur d'import", errorMessage);
+          }
+        } else {
+          this.showToast('error', "Erreur d'import", errorMessage);
+        }
+      },
+    });
   }
 
   checkCategories() {

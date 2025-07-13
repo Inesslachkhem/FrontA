@@ -678,7 +678,7 @@ import { ConfirmationService } from '../../services/confirmation.service';
                       Annuler
                     </button>
                     <button
-                      (click)="importCategories()"
+                      (click)="showImportWarning()"
                       [disabled]="!selectedFile || importing"
                       class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all duration-200 flex items-center justify-center"
                     >
@@ -1006,10 +1006,25 @@ export class CategoryListComponent implements OnInit {
   }
 
   onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.selectedFile = files[0];
+      console.log(
+        'File selected:',
+        this.selectedFile?.name,
+        this.selectedFile?.size,
+        this.selectedFile?.type
+      );
+    } else {
+      this.selectedFile = null;
+      console.log('No file selected');
+    }
   }
-  importCategories() {
+  showImportWarning() {
     if (!this.selectedFile) return;
+
+    // Close the import modal first
+    this.closeImportModal();
 
     // Show warning confirmation using custom modal
     this.confirmationService
@@ -1030,71 +1045,85 @@ Are you absolutely sure you want to proceed?`,
         'Yes, Replace Everything'
       )
       .subscribe((confirmed) => {
-        if (!confirmed) {
-          return;
+        if (confirmed) {
+          this.importCategories();
+        } else {
+          // If user cancels, reopen the import modal
+          setTimeout(() => {
+            this.openImportModal();
+          }, 300);
+        }
+      });
+  }
+
+  importCategories() {
+    if (!this.selectedFile) return;
+
+    console.log('Starting import for file:', this.selectedFile!.name);
+    console.log('File size:', this.selectedFile!.size, 'bytes');
+    console.log('File type:', this.selectedFile!.type);
+    console.log('API URL:', this.categorieService);
+
+    this.importing = true;
+    this.categorieService.importCategories(this.selectedFile!).subscribe({
+      next: (response) => {
+        console.log('Import successful:', response);
+        this.closeImportModal();
+        this.selectedFile = null;
+        this.importing = false;
+        this.loadCategories();
+        this.showMessage(
+          response.Message || 'Categories imported successfully',
+          'success'
+        );
+      },
+      error: (error) => {
+        console.error('Import error details:', error);
+        console.error('Error status:', error.status);
+        console.error('Error statusText:', error.statusText);
+        console.error('Error url:', error.url);
+        console.error('Error headers:', error.headers);
+        this.importing = false;
+
+        let errorMessage = 'Error importing categories';
+        let detailedErrors: string[] = [];
+
+        if (error.error) {
+          if (error.error.error) {
+            errorMessage = error.error.error;
+          } else if (error.error.Error) {
+            errorMessage = error.error.Error;
+          } else if (error.error.details) {
+            detailedErrors = error.error.details;
+            errorMessage = `CSV Validation Errors (${
+              detailedErrors.length
+            } issues found):\n${detailedErrors.join('\n')}`;
+          } else if (typeof error.error === 'string') {
+            errorMessage = error.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
         }
 
-        console.log('Starting import for file:', this.selectedFile!.name);
-        console.log('File size:', this.selectedFile!.size, 'bytes');
-        console.log('File type:', this.selectedFile!.type);
+        console.error('Processed error message:', errorMessage);
+        console.error('Detailed errors:', detailedErrors);
 
-        this.importing = true;
-        this.categorieService.importCategories(this.selectedFile!).subscribe({
-          next: (response) => {
-            console.log('Import successful:', response);
-            this.closeImportModal();
-            this.selectedFile = null;
-            this.importing = false;
-            this.loadCategories();
-            this.showMessage(
-              response.Message || 'Categories imported successfully',
-              'success'
-            );
-          },
-          error: (error) => {
-            console.error('Import error details:', error);
-            this.importing = false;
+        // Show detailed errors in custom confirmation for debugging
+        if (detailedErrors.length > 0) {
+          this.confirmationService
+            .confirmInfo(
+              'CSV Import Errors',
+              `CSV Import Errors:\n\n${detailedErrors.join(
+                '\n'
+              )}\n\nPlease fix these issues and try again.`,
+              'OK'
+            )
+            .subscribe();
+        }
 
-            let errorMessage = 'Error importing categories';
-            let detailedErrors: string[] = [];
-
-            if (error.error) {
-              if (error.error.error) {
-                errorMessage = error.error.error;
-              } else if (error.error.Error) {
-                errorMessage = error.error.Error;
-              } else if (error.error.details) {
-                detailedErrors = error.error.details;
-                errorMessage = `CSV Validation Errors (${
-                  detailedErrors.length
-                } issues found):\n${detailedErrors.join('\n')}`;
-              } else if (typeof error.error === 'string') {
-                errorMessage = error.error;
-              }
-            } else if (error.message) {
-              errorMessage = error.message;
-            }
-
-            console.error('Processed error message:', errorMessage);
-            console.error('Detailed errors:', detailedErrors);
-
-            // Show detailed errors in custom confirmation for debugging
-            if (detailedErrors.length > 0) {
-              this.confirmationService
-                .confirmInfo(
-                  'CSV Import Errors',
-                  `CSV Import Errors:\n\n${detailedErrors.join(
-                    '\n'
-                  )}\n\nPlease fix these issues and try again.`,
-                  'OK'
-                )
-                .subscribe();
-            }
-
-            this.showMessage(errorMessage, 'error');
-          },
-        });
-      });
+        this.showMessage(errorMessage, 'error');
+      },
+    });
   }
 
   showMessage(message: string, type: 'success' | 'error') {
@@ -1107,5 +1136,22 @@ Are you absolutely sure you want to proceed?`,
 
   trackByCategory(index: number, category: Categorie): string {
     return category.idCategorie;
+  }
+
+  testConnection() {
+    console.log('Testing API connection...');
+    this.categorieService.testConnection().subscribe({
+      next: (response) => {
+        console.log('API connection successful:', response);
+        this.showMessage('API connection successful!', 'success');
+      },
+      error: (error) => {
+        console.error('API connection failed:', error);
+        this.showMessage(
+          `API connection failed: ${error.message || error.status}`,
+          'error'
+        );
+      },
+    });
   }
 }

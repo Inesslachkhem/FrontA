@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { Categorie } from '../models/article.model';
 
 @Injectable({
@@ -36,11 +37,37 @@ export class CategorieService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  // Test connection to backend
+  testConnection(): Observable<any> {
+    console.log('Testing connection to:', this.apiUrl);
+    return this.http.get(`${this.apiUrl}`).pipe(
+      tap((response: any) =>
+        console.log('Connection test successful:', response)
+      ),
+      catchError((error: any) => {
+        console.error('Connection test failed:', error);
+        throw error;
+      })
+    );
+  }
+
   // Import categories from CSV
   importCategories(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/import-categories`, formData);
+
+    console.log('FormData created:', formData);
+    console.log('File being uploaded:', file.name, file.size, file.type);
+    console.log('Making request to:', `${this.apiUrl}/import-categories`);
+
+    // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+    return this.http.post(`${this.apiUrl}/import-categories`, formData).pipe(
+      tap((response) => console.log('Service response:', response)),
+      catchError((error) => {
+        console.error('Service error:', error);
+        throw error;
+      })
+    );
   }
 
   // Clear all categories

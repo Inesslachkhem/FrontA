@@ -310,7 +310,7 @@ import { ConfirmationService } from '../../services/confirmation.service';
               {{
                 ventes.length === 0
                   ? 'Commencez par enregistrer votre première vente.'
-                  : 'Essayez d'ajuster vos filtres de recherche.'
+                  : 'Essayez d ajuster vos filtres de recherche.'
               }}
             </p>
           </div>
@@ -465,7 +465,7 @@ import { ConfirmationService } from '../../services/confirmation.service';
           </div>
         </div>
 
-        <!-- Pagination with enhanced design -->
+         
         <div
           class="backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-6 mt-8"
         >
@@ -552,179 +552,281 @@ import { ConfirmationService } from '../../services/confirmation.service';
     <!-- Import Modal Template -->
     <ng-template #importModalTemplate>
       <div
-        class="modal-content-wrapper  bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        (click)="closeImportModal()"
       >
-        <!-- Modal Header -->
         <div
-          class="w-full px-8 py-8 text-center bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
+          class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col border border-white/20 dark:border-gray-700/50"
+          (click)="$event.stopPropagation()"
         >
-          <div class="flex flex-col items-center space-y-4">
-            <div class="p-4 bg-purple-100 dark:bg-purple-900 rounded-full">
-              <i
-                class="fas fa-upload text-purple-600 dark:text-purple-300 text-3xl"
-              ></i>
-            </div>
-            <div>
-              <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Importer Données de Vente
-              </h3>
-              <p class="text-base text-gray-600 dark:text-gray-300 max-w-md">
-                Importez vos données de vente en téléchargeant un fichier CSV
-                formaté
-              </p>
+          <!-- Modal Header - Fixed -->
+          <div
+            class="flex-shrink-0 px-8 py-6 text-center bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-t-2xl border-b border-gray-200 dark:border-gray-600"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
+                  <i
+                    class="fas fa-upload text-purple-600 dark:text-purple-300 text-2xl"
+                  ></i>
+                </div>
+                <div class="text-left">
+                  <h3
+                    class="text-2xl font-bold text-gray-900 dark:text-white mb-1"
+                  >
+                    Importer Données de Vente
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300">
+                    Importez vos données de vente via un fichier CSV formaté
+                  </p>
+                </div>
+              </div>
+              <button
+                (click)="closeImportModal()"
+                class="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+              >
+                <i class="fas fa-times text-xl"></i>
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Modal Body -->
-        <div class="flex-1 w-full px-8 py-8">
-          <div class="flex flex-col space-y-8">
-            <!-- Section: File Selection -->
-            <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <h4
-                class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-              >
-                <i class="fas fa-file-csv text-green-500 mr-2"></i>
-                Sélection du Fichier
-              </h4>
-              <div class="space-y-4">
-                <div>
-                  <label
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Fichier CSV <span class="text-red-500">*</span>
-                  </label>
-                  <div class="flex items-center justify-center w-full">
+          <!-- Modal Body - Scrollable -->
+          <div class="flex-1 overflow-y-auto px-8 py-6">
+            <div class="space-y-8">
+              <!-- Section: File Selection -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+                <h4
+                  class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+                >
+                  <i class="fas fa-file-csv text-green-500 mr-3"></i>
+                  Sélection du Fichier
+                </h4>
+                <div class="space-y-4">
+                  <div>
                     <label
-                      class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-all duration-200"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
                     >
-                      <div
-                        class="flex flex-col items-center justify-center pt-5 pb-6"
-                      >
-                        <i
-                          class="fas fa-cloud-upload-alt text-gray-400 text-2xl mb-2"
-                        ></i>
-                        <p
-                          class="mb-2 text-sm text-gray-500 dark:text-gray-400"
-                        >
-                          <span class="font-semibold"
-                            >Cliquez pour télécharger</span
-                          >
-                          ou glissez-déposez
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                          CSV uniquement
-                        </p>
-                      </div>
+                      Fichier CSV <span class="text-red-500">*</span>
+                    </label>
+
+                    <!-- Drag & Drop Area -->
+                    <div class="relative">
                       <input
                         #fileInput
                         type="file"
-                        accept=".csv"
+                        accept=".csv,.tsv,.txt"
                         (change)="onFileSelected($event)"
-                        class="hidden"
+                        (dragover)="onDragOver($event)"
+                        (dragleave)="onDragLeave($event)"
+                        (drop)="onDrop($event)"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        id="file-upload"
                       />
-                    </label>
-                  </div>
-                </div>
-
-                <div
-                  *ngIf="selectedFile"
-                  class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-                >
-                  <div class="flex items-center space-x-3">
-                    <i
-                      class="fas fa-file-csv text-blue-600 dark:text-blue-400 text-xl"
-                    ></i>
-                    <div class="flex-1">
-                      <p
-                        class="text-sm font-medium text-blue-900 dark:text-blue-100"
+                      <label
+                        for="file-upload"
+                        class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-600 dark:to-gray-700 hover:from-purple-50 hover:to-indigo-50 dark:hover:from-gray-500 dark:hover:to-gray-600 hover:border-purple-300 dark:hover:border-purple-400 transition-all duration-300 group"
+                        [class.border-purple-400]="isDragOver"
+                        [class.bg-purple-50]="isDragOver"
                       >
-                        {{ selectedFile.name }}
-                      </p>
-                      <p class="text-xs text-blue-700 dark:text-blue-300">
-                        {{ (selectedFile.size / 1024).toFixed(2) }} KB
-                      </p>
+                        <div
+                          class="flex flex-col items-center justify-center pt-5 pb-6"
+                        >
+                          <i
+                            class="fas fa-cloud-upload-alt text-gray-400 group-hover:text-purple-500 dark:group-hover:text-purple-400 text-4xl mb-4 transition-colors duration-300"
+                            [class.text-purple-500]="isDragOver"
+                          ></i>
+                          <p
+                            class="mb-2 text-lg text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300"
+                          >
+                            <span class="font-semibold"
+                              >Cliquez pour sélectionner</span
+                            >
+                            ou glissez-déposez votre fichier
+                          </p>
+                          <p class="text-sm text-gray-400 dark:text-gray-500">
+                            Formats supportés: CSV, TSV, TXT (max 10MB)
+                          </p>
+                        </div>
+                      </label>
                     </div>
-                    <button
-                      (click)="removeSelectedFile()"
-                      class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                  </div>
+
+                  <!-- Selected File Preview -->
+                  <div
+                    *ngIf="selectedFile"
+                    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 transition-all duration-300"
+                  >
+                    <div class="flex items-center space-x-4">
+                      <div class="p-3 bg-blue-100 dark:bg-blue-800 rounded-xl">
+                        <i
+                          class="fas fa-file-csv text-blue-600 dark:text-blue-300 text-xl"
+                        ></i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p
+                          class="text-sm font-semibold text-blue-900 dark:text-blue-100 truncate"
+                        >
+                          {{ selectedFile.name }}
+                        </p>
+                        <p class="text-xs text-blue-700 dark:text-blue-300">
+                          {{ (selectedFile.size / 1024).toFixed(2) }} KB •
+                          Modifié le
+                          {{ selectedFile.lastModified | date : 'short' }}
+                        </p>
+                      </div>
+                      <button
+                        (click)="removeSelectedFile()"
+                        class="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-all duration-200"
+                        title="Supprimer le fichier"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: CSV Format Requirements -->
+              <div
+                class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-6"
+              >
+                <h4
+                  class="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-4 flex items-center"
+                >
+                  <i
+                    class="fas fa-exclamation-triangle text-amber-600 dark:text-amber-400 mr-3"
+                  ></i>
+                  Format CSV Requis
+                </h4>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4">
+                  <p
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    En-têtes de colonnes obligatoires (première ligne) :
+                  </p>
+                  <code
+                    class="block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200"
+                  >
+                    articleId,quantiteFacturee,prix_Vente_TND,date
+                  </code>
+                </div>
+                <div
+                  class="space-y-3 text-sm text-amber-800 dark:text-amber-200"
+                >
+                  <div class="flex items-start space-x-3">
+                    <i
+                      class="fas fa-check-circle text-green-500 mt-0.5 flex-shrink-0"
+                    ></i>
+                    <span
+                      ><strong>articleId:</strong> ID numérique de l'article
+                      (doit exister dans la base)</span
                     >
-                      <i class="fas fa-times"></i>
-                    </button>
+                  </div>
+                  <div class="flex items-start space-x-3">
+                    <i
+                      class="fas fa-check-circle text-green-500 mt-0.5 flex-shrink-0"
+                    ></i>
+                    <span
+                      ><strong>quantiteFacturee:</strong> Nombre entier positif
+                      (ex: 5)</span
+                    >
+                  </div>
+                  <div class="flex items-start space-x-3">
+                    <i
+                      class="fas fa-check-circle text-green-500 mt-0.5 flex-shrink-0"
+                    ></i>
+                    <span
+                      ><strong>prix_Vente_TND:</strong> Prix unitaire en dinars
+                      tunisiens (ex: 25.50)</span
+                    >
+                  </div>
+                  <div class="flex items-start space-x-3">
+                    <i
+                      class="fas fa-check-circle text-green-500 mt-0.5 flex-shrink-0"
+                    ></i>
+                    <span
+                      ><strong>date:</strong> Format YYYY-MM-DD ou YYYY-MM-DD
+                      HH:mm:ss</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: Example CSV -->
+              <div
+                class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-6"
+              >
+                <h4
+                  class="text-lg font-semibold text-green-900 dark:text-green-100 mb-4 flex items-center"
+                >
+                  <i
+                    class="fas fa-file-alt text-green-600 dark:text-green-400 mr-3"
+                  ></i>
+                  Exemple de Fichier CSV
+                </h4>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border">
+                  <pre
+                    class="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap"
+                  ><code>articleId,quantiteFacturee,prix_Vente_TND,date
+1,10,25.50,2024-01-15 10:30:00
+2,5,15.75,2024-01-15 11:15:00
+3,3,45.00,2024-01-15 14:20:00</code></pre>
+                </div>
+                <p
+                  class="text-sm text-green-700 dark:text-green-300 mt-3 flex items-center"
+                >
+                  <i class="fas fa-lightbulb mr-2"></i>
+                  Ce format garantira un import réussi de vos données de vente
+                </p>
+              </div>
+
+              <!-- Import Progress -->
+              <div
+                *ngIf="importing"
+                class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-6"
+              >
+                <div class="flex items-center space-x-4">
+                  <div
+                    class="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"
+                  ></div>
+                  <div>
+                    <p class="text-blue-900 dark:text-blue-100 font-medium">
+                      Import en cours...
+                    </p>
+                    <p class="text-blue-700 dark:text-blue-300 text-sm">
+                      Veuillez patienter pendant le traitement du fichier
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Section: Import Instructions -->
-            <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <h4
-                class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+          <!-- Modal Footer - Fixed -->
+          <div
+            class="flex-shrink-0 px-8 py-6 bg-gray-50 dark:bg-gray-700 rounded-b-2xl border-t border-gray-200 dark:border-gray-600"
+          >
+            <div class="flex justify-end space-x-4">
+              <button
+                type="button"
+                (click)="closeImportModal()"
+                [disabled]="importing"
+                class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                Instructions d'Import
-              </h4>
-              <div class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                <p class="flex items-start space-x-2">
-                  <i
-                    class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                  ></i>
-                  <span
-                    >Le fichier CSV doit contenir les colonnes: articleId,
-                    quantiteFacturee, prix_Vente_TND, date</span
-                  >
-                </p>
-                <p class="flex items-start space-x-2">
-                  <i
-                    class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                  ></i>
-                  <span
-                    >La première ligne doit contenir les en-têtes de
-                    colonnes</span
-                  >
-                </p>
-                <p class="flex items-start space-x-2">
-                  <i
-                    class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                  ></i>
-                  <span
-                    >Les dates doivent être au format YYYY-MM-DD ou YYYY-MM-DD
-                    HH:mm:ss</span
-                  >
-                </p>
-                <p class="flex items-start space-x-2">
-                  <i
-                    class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                  ></i>
-                  <span
-                    >Les prix doivent être des nombres décimaux (ex:
-                    25.50)</span
-                  >
-                </p>
-              </div>
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div class="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  (click)="closeImportModal()"
-                  class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  <i class="fas fa-times mr-2"></i>
-                  Annuler
-                </button>
-                <button
-                  (click)="importVentes()"
-                  [disabled]="!selectedFile || importing"
-                  class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
-                >
-                  <i class="fas fa-spinner fa-spin mr-2" *ngIf="importing"></i>
-                  <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
-                  <span>{{ importing ? 'Importation...' : 'Importer' }}</span>
-                </button>
-              </div>
+                <i class="fas fa-times mr-2"></i>
+                {{ importing ? 'Fermer' : 'Annuler' }}
+              </button>
+              <button
+                (click)="importVentes()"
+                [disabled]="!selectedFile || importing"
+                class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none disabled:cursor-not-allowed"
+              >
+                <i class="fas fa-spinner fa-spin mr-2" *ngIf="importing"></i>
+                <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
+                <span>{{
+                  importing ? 'Importation...' : 'Importer les Ventes'
+                }}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -947,6 +1049,7 @@ export class VenteListComponent implements OnInit {
   // Import
   selectedFile: File | null = null;
   importing = false;
+  isDragOver = false;
 
   // Utility
   Math = Math;
@@ -1080,10 +1183,6 @@ export class VenteListComponent implements OnInit {
     }, 300);
   }
 
-  removeSelectedFile() {
-    this.selectedFile = null;
-  }
-
   editVente(vente: Vente) {
     this.isEditMode = true;
     this.currentVente = { ...vente };
@@ -1193,7 +1292,65 @@ export class VenteListComponent implements OnInit {
   }
 
   onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
+    const file = event.target.files[0];
+    this.handleFileSelection(file);
+  }
+
+  // Drag and drop handlers
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.handleFileSelection(files[0]);
+    }
+  }
+
+  private handleFileSelection(file: File) {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['.csv', '.tsv', '.txt'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!allowedTypes.includes(fileExtension)) {
+      this.showToast(
+        'Veuillez sélectionner un fichier CSV, TSV ou TXT.',
+        'error'
+      );
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      this.showToast('Le fichier est trop volumineux (max 10MB).', 'error');
+      return;
+    }
+
+    this.selectedFile = file;
+    this.showToast(
+      `Fichier "${file.name}" sélectionné avec succès.`,
+      'success'
+    );
+  }
+
+  removeSelectedFile() {
+    this.selectedFile = null;
+    this.showToast('Fichier supprimé.', 'info');
   }
 
   importVentes() {

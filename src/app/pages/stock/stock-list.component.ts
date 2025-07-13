@@ -4,14 +4,15 @@ import {
   ViewChild,
   TemplateRef,
   ViewContainerRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { OverlayModule } from '@angular/cdk/overlay';
+import { HttpClient } from '@angular/common/http';
 
 // Import services
-import { StockService } from '../../services/stock.service';
 import { ArticleService } from '../../services/article.service';
 import { DepotService } from '../../services/depot.service';
 import { ModalService } from '../../services/modal.service';
@@ -1002,9 +1003,9 @@ export interface StockAlert {
           </div>
 
           <!-- Stock Import Modal Template -->
-          <ng-template #importModalTemplate>
+          <ng-template #stockImportModal>
             <div
-              class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
+              class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col overflow-hidden"
             >
               <!-- Modal Header -->
               <div
@@ -1027,149 +1028,476 @@ export interface StockAlert {
                     <p
                       class="text-base text-gray-600 dark:text-gray-300 max-w-md"
                     >
-                      Importez vos données de stock en téléchargeant un fichier
-                      CSV formaté
+                      Téléchargez et importez vos données de stock depuis un
+                      fichier CSV formaté
                     </p>
                   </div>
+                </div>
+                <div class="absolute top-4 right-4">
+                  <button
+                    (click)="closeModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  >
+                    <i class="fas fa-times text-lg"></i>
+                  </button>
                 </div>
               </div>
 
               <!-- Modal Body -->
-              <div class="flex-1 w-full px-8 py-8">
+              <div class="flex-1 overflow-y-auto p-8">
+                <!-- File Upload Section -->
+                <div class="mb-8">
+                  <div
+                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    (dragover)="onDragOver($event)"
+                    (dragleave)="onDragLeave($event)"
+                    (drop)="onFileDrop($event)"
+                  >
+                    <div class="flex flex-col items-center space-y-4">
+                      <div
+                        class="p-6 bg-purple-100 dark:bg-purple-900/50 rounded-full"
+                      >
+                        <i
+                          class="fas fa-cloud-upload-alt text-purple-600 dark:text-purple-400 text-4xl"
+                        ></i>
+                      </div>
+                      <div>
+                        <h4
+                          class="text-xl font-semibold text-gray-900 dark:text-white mb-2"
+                        >
+                          Télécharger un fichier CSV
+                        </h4>
+                        <p
+                          class="text-gray-600 dark:text-gray-400 text-sm mb-4"
+                        >
+                          Glissez-déposez votre fichier ou cliquez pour
+                          sélectionner
+                        </p>
+                        <input
+                          #fileInput
+                          type="file"
+                          accept=".csv"
+                          (change)="onFileSelected($event)"
+                          class="hidden"
+                          id="file-upload"
+                        />
+                        <label
+                          for="file-upload"
+                          class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200 shadow-lg hover:shadow-xl"
+                        >
+                          <i class="fas fa-file-upload mr-2"></i>
+                          Choisir un fichier
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- File Preview -->
+                    <div
+                      *ngIf="selectedFile"
+                      class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                          <i
+                            class="fas fa-file-csv text-green-600 dark:text-green-400 text-2xl"
+                          ></i>
+                          <div>
+                            <p
+                              class="font-medium text-gray-900 dark:text-white"
+                            >
+                              {{ selectedFile.name }}
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                              {{ (selectedFile.size / 1024).toFixed(2) }} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          (click)="clearSelectedFile()"
+                          class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                        >
+                          <i class="fas fa-trash text-lg"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Format Information -->
+                <div class="mb-8">
+                  <h5
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+                  >
+                    <i
+                      class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"
+                    ></i>
+                    Format CSV Requis
+                  </h5>
+                  <div
+                    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4"
+                  >
+                    <p
+                      class="text-sm text-blue-800 dark:text-blue-300 mb-3 font-medium"
+                    >
+                      Votre fichier CSV doit contenir les colonnes suivantes :
+                    </p>
+                    <div
+                      class="grid grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-400 font-mono"
+                    >
+                      <div>• Id (optionnel)</div>
+                      <div>• ArticleId</div>
+                      <div>• QuantitePhysique</div>
+                      <div>• StockMin</div>
+                      <div>• VenteFFO</div>
+                      <div>• LivreFou</div>
+                      <div>• Transfert</div>
+                      <div>• AnnonceTrf</div>
+                      <div>• Valeur_Stock_TND</div>
+                      <div>• DepotId</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Warning Section -->
+                <div class="mb-6">
+                  <div
+                    class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
+                  >
+                    <div class="flex items-start space-x-3">
+                      <i
+                        class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl mt-0.5"
+                      ></i>
+                      <div>
+                        <h6
+                          class="font-semibold text-red-800 dark:text-red-300 mb-2"
+                        >
+                          Attention : Remplacement Complet
+                        </h6>
+                        <p class="text-sm text-red-700 dark:text-red-400">
+                          Cette action remplacera TOUTES les données de stock
+                          existantes. Cette opération ne peut pas être annulée.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modal Footer -->
+              <div
+                class="border-t border-gray-200 dark:border-gray-700 px-8 py-6 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl"
+              >
+                <div class="flex justify-between items-center">
+                  <button
+                    type="button"
+                    (click)="closeModal()"
+                    class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                  </button>
+
+                  <!-- Debug buttons -->
+                  <div class="flex space-x-2" *ngIf="selectedFile">
+                    <button
+                      type="button"
+                      (click)="testApiConnection()"
+                      class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                    >
+                      🔍 Test API
+                    </button>
+                    <button
+                      type="button"
+                      (click)="analyzeFileFormat()"
+                      class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg"
+                    >
+                      📋 Analyze CSV
+                    </button>
+                  </div>
+
+                  <button
+                    (click)="showImportWarning()"
+                    [disabled]="!selectedFile || importing"
+                    class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
+                  >
+                    <i
+                      class="fas fa-spinner fa-spin mr-2"
+                      *ngIf="importing"
+                    ></i>
+                    <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
+                    <span>{{ importing ? 'Importation...' : 'Importer' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </ng-template>
+
+        <!-- Toast Modal Notification -->
+        <div
+          *ngIf="showToast"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-300"
+        >
+          <div
+            class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 animate-fadeInModal"
+          >
+            <div class="absolute top-4 right-4">
+              <button
+                (click)="hideToast()"
+                class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors text-xl"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="mb-4 flex flex-col items-center">
+              <i
+                [class]="getToastIconClass()"
+                class="text-4xl mb-2 animate-pulse"
+              ></i>
+              <span
+                class="text-lg font-semibold text-gray-900 dark:text-white text-center"
+                >{{ toastMessage }}</span
+              >
+            </div>
+            <button
+              (click)="hideToast()"
+              class="mt-6 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow transition-all duration-200"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+
+        <!-- Stock Add/Edit Modal Template -->
+        <ng-template #stockModalTemplate>
+          <div
+            class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
+          >
+            <!-- Modal Header -->
+            <div
+              class="w-full px-8 py-8 text-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
+            >
+              <div class="flex flex-col items-center space-y-4">
+                <div class="p-4 bg-blue-100 dark:bg-blue-900 rounded-full">
+                  <i
+                    class="fas fa-boxes text-blue-600 dark:text-blue-300 text-3xl"
+                  ></i>
+                </div>
+                <div>
+                  <h3
+                    class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
+                  >
+                    {{ isEditing ? 'Modifier Stock' : 'Ajouter Stock' }}
+                  </h3>
+                  <p
+                    class="text-base text-gray-600 dark:text-gray-300 max-w-md"
+                  >
+                    {{
+                      isEditing
+                        ? 'Modifiez les informations du stock ci-dessous'
+                        : 'Créez un nouveau stock en remplissant tous les champs requis'
+                    }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 w-full px-8 py-8 max-h-[60vh] overflow-y-auto">
+              <form (ngSubmit)="saveStock()" class="w-full">
                 <div class="flex flex-col space-y-8">
-                  <!-- Section: File Selection -->
+                  <!-- Section: Article Information -->
                   <div
                     class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
                   >
                     <h4
                       class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
                     >
-                      <i class="fas fa-file-csv text-green-500 mr-2"></i>
-                      Sélection du Fichier
+                      <i class="fas fa-cube text-blue-500 mr-2"></i>
+                      Informations Article
                     </h4>
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label
                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
-                          Fichier CSV <span class="text-red-500">*</span>
+                          Article <span class="text-red-500">*</span>
                         </label>
-                        <div class="flex items-center justify-center w-full">
-                          <label
-                            class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-all duration-200"
-                            (dragover)="onDragOver($event)"
-                            (dragleave)="onDragLeave($event)"
-                            (drop)="onFileDrop($event)"
+                        <select
+                          [(ngModel)]="currentStock.articleId"
+                          name="articleId"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                        >
+                          <option value="">Sélectionner un article</option>
+                          <option
+                            *ngFor="let article of articles"
+                            [value]="article.id"
                           >
-                            <div
-                              class="flex flex-col items-center justify-center pt-5 pb-6"
-                            >
-                              <i
-                                class="fas fa-cloud-upload-alt text-gray-400 text-2xl mb-2"
-                              ></i>
-                              <p
-                                class="mb-2 text-sm text-gray-500 dark:text-gray-400"
-                              >
-                                <span class="font-semibold"
-                                  >Cliquez pour télécharger</span
-                                >
-                                ou glissez-déposez
-                              </p>
-                              <p
-                                class="text-xs text-gray-500 dark:text-gray-400"
-                              >
-                                CSV uniquement
-                              </p>
-                            </div>
-                            <input
-                              #fileInput
-                              type="file"
-                              accept=".csv"
-                              (change)="onFileSelected($event)"
-                              class="hidden"
-                            />
-                          </label>
-                        </div>
+                            {{ article.codeArticle }} - {{ article.libelle }}
+                          </option>
+                        </select>
                       </div>
-
-                      <div
-                        *ngIf="selectedFile"
-                        class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-                      >
-                        <div class="flex items-center space-x-3">
-                          <i
-                            class="fas fa-file-csv text-blue-600 dark:text-blue-400 text-xl"
-                          ></i>
-                          <div class="flex-1">
-                            <p
-                              class="text-sm font-medium text-blue-900 dark:text-blue-100"
-                            >
-                              {{ selectedFile.name }}
-                            </p>
-                            <p class="text-xs text-blue-700 dark:text-blue-300">
-                              {{ (selectedFile.size / 1024).toFixed(2) }} KB
-                            </p>
-                          </div>
-                          <button
-                            (click)="clearSelectedFile()"
-                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Dépôt <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                          [(ngModel)]="currentStock.depotId"
+                          name="depotId"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                        >
+                          <option value="">Sélectionner un dépôt</option>
+                          <option
+                            *ngFor="let depot of depots"
+                            [value]="depot.id"
                           >
-                            <i class="fas fa-times"></i>
-                          </button>
-                        </div>
+                            {{ depot.code }} - {{ depot.libelle }}
+                          </option>
+                        </select>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Section: Import Instructions -->
+                  <!-- Section: Basic Stock Information -->
                   <div
                     class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
                   >
                     <h4
                       class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
                     >
-                      <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                      Instructions d'Import
+                      <i class="fas fa-boxes text-green-500 mr-2"></i>
+                      Informations Stock de Base
                     </h4>
-                    <div
-                      class="space-y-3 text-sm text-gray-600 dark:text-gray-300"
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Quantité Physique
+                          <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.quantitePhysique"
+                          name="quantitePhysique"
+                          type="number"
+                          min="0"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 100"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Stock Minimum <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.stockMin"
+                          name="stockMin"
+                          type="number"
+                          min="0"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 10"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Valeur Stock (TND)
+                          <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.valeur_Stock_TND"
+                          name="valeurStock"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 1500.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Section: Stock Movement Details -->
+                  <div
+                    class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
+                  >
+                    <h4
+                      class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
                     >
-                      <p class="flex items-start space-x-2">
-                        <i
-                          class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                        ></i>
-                        <span
-                          >Le fichier CSV doit contenir les colonnes: articleId,
-                          quantitePhysique, stockMin, valeur_Stock_TND</span
+                      <i class="fas fa-exchange-alt text-purple-500 mr-2"></i>
+                      Détails des Mouvements de Stock
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
-                      </p>
-                      <p class="flex items-start space-x-2">
-                        <i
-                          class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                        ></i>
-                        <span
-                          >La première ligne doit contenir les en-têtes de
-                          colonnes</span
+                          Vente FFO
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.venteFFO"
+                          name="venteFFO"
+                          type="number"
+                          min="0"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 50"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
-                      </p>
-                      <p class="flex items-start space-x-2">
-                        <i
-                          class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                        ></i>
-                        <span
-                          >Les valeurs de stock doivent être des nombres
-                          décimaux positifs</span
+                          Livré Fournisseur
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.livreFou"
+                          name="livreFou"
+                          type="number"
+                          min="0"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 200"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
-                      </p>
-                      <p class="flex items-start space-x-2">
-                        <i
-                          class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                        ></i>
-                        <span
-                          >Colonnes optionnelles: venteFFO, livreFou, transfert,
-                          annonceTrf</span
+                          Transfert
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.transfert"
+                          name="transfert"
+                          type="number"
+                          min="0"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 25"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
-                      </p>
+                          Annonce Transfert
+                        </label>
+                        <input
+                          [(ngModel)]="currentStock.annonceTrf"
+                          name="annonceTrf"
+                          type="number"
+                          min="0"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
+                          placeholder="Ex: 15"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1187,839 +1515,326 @@ export interface StockAlert {
                         Annuler
                       </button>
                       <button
-                        (click)="importStocks()"
-                        [disabled]="!selectedFile || importing"
-                        class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
+                        type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2"
                       >
-                        <i
-                          class="fas fa-spinner fa-spin mr-2"
-                          *ngIf="importing"
-                        ></i>
-                        <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
-                        <span>{{
-                          importing ? 'Importation...' : 'Importer'
-                        }}</span>
+                        <i class="fas fa-save"></i>
+                        <span>{{ isEditing ? 'Modifier' : 'Créer' }}</span>
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </ng-template>
-
-          <!-- Toast Modal Notification -->
-          <div
-            *ngIf="showToast"
-            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-300"
-          >
-            <div
-              class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 animate-fadeInModal"
-            >
-              <div class="absolute top-4 right-4">
-                <button
-                  (click)="hideToast()"
-                  class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors text-xl"
-                >
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              <div class="mb-4 flex flex-col items-center">
-                <i
-                  [class]="getToastIconClass()"
-                  class="text-4xl mb-2 animate-pulse"
-                ></i>
-                <span
-                  class="text-lg font-semibold text-gray-900 dark:text-white text-center"
-                  >{{ toastMessage }}</span
-                >
-              </div>
-              <button
-                (click)="hideToast()"
-                class="mt-6 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow transition-all duration-200"
-              >
-                Fermer
-              </button>
+              </form>
             </div>
           </div>
 
-          <!-- Stock Add/Edit Modal Template -->
-          <ng-template #stockModalTemplate>
+          <!-- Stock Import Modal Template -->
+          <ng-template #stockImportModal>
             <div
-              class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
+              class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col overflow-hidden"
             >
               <!-- Modal Header -->
               <div
-                class="w-full px-8 py-8 text-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
+                class="w-full px-8 py-8 text-center bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
               >
                 <div class="flex flex-col items-center space-y-4">
-                  <div class="p-4 bg-blue-100 dark:bg-blue-900 rounded-full">
+                  <div
+                    class="p-4 bg-purple-100 dark:bg-purple-900 rounded-full"
+                  >
                     <i
-                      class="fas fa-boxes text-blue-600 dark:text-blue-300 text-3xl"
+                      class="fas fa-upload text-purple-600 dark:text-purple-300 text-3xl"
                     ></i>
                   </div>
                   <div>
                     <h3
                       class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
                     >
-                      {{ isEditing ? 'Modifier Stock' : 'Ajouter Stock' }}
+                      Importer Données de Stock
                     </h3>
                     <p
                       class="text-base text-gray-600 dark:text-gray-300 max-w-md"
                     >
-                      {{
-                        isEditing
-                          ? 'Modifiez les informations du stock ci-dessous'
-                          : 'Créez un nouveau stock en remplissant tous les champs requis'
-                      }}
+                      Téléchargez et importez vos données de stock depuis un
+                      fichier CSV formaté
                     </p>
                   </div>
+                </div>
+                <div class="absolute top-4 right-4">
+                  <button
+                    (click)="closeModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  >
+                    <i class="fas fa-times text-lg"></i>
+                  </button>
                 </div>
               </div>
 
               <!-- Modal Body -->
-              <div class="flex-1 w-full px-8 py-8 max-h-[60vh] overflow-y-auto">
-                <form (ngSubmit)="saveStock()" class="w-full">
-                  <div class="flex flex-col space-y-8">
-                    <!-- Section: Article Information -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <h4
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                      >
-                        <i class="fas fa-cube text-blue-500 mr-2"></i>
-                        Informations Article
-                      </h4>
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Article <span class="text-red-500">*</span>
-                          </label>
-                          <select
-                            [(ngModel)]="currentStock.articleId"
-                            name="articleId"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                          >
-                            <option value="">Sélectionner un article</option>
-                            <option
-                              *ngFor="let article of articles"
-                              [value]="article.id"
-                            >
-                              {{ article.codeArticle }} - {{ article.libelle }}
-                            </option>
-                          </select>
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Dépôt <span class="text-red-500">*</span>
-                          </label>
-                          <select
-                            [(ngModel)]="currentStock.depotId"
-                            name="depotId"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                          >
-                            <option value="">Sélectionner un dépôt</option>
-                            <option
-                              *ngFor="let depot of depots"
-                              [value]="depot.id"
-                            >
-                              {{ depot.code }} - {{ depot.libelle }}
-                            </option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Section: Basic Stock Information -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <h4
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                      >
-                        <i class="fas fa-boxes text-green-500 mr-2"></i>
-                        Informations Stock de Base
-                      </h4>
-                      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Quantité Physique
-                            <span class="text-red-500">*</span>
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.quantitePhysique"
-                            name="quantitePhysique"
-                            type="number"
-                            min="0"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 100"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Stock Minimum <span class="text-red-500">*</span>
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.stockMin"
-                            name="stockMin"
-                            type="number"
-                            min="0"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 10"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Valeur Stock (TND)
-                            <span class="text-red-500">*</span>
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.valeur_Stock_TND"
-                            name="valeurStock"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 1500.00"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Section: Stock Movement Details -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <h4
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                      >
-                        <i class="fas fa-exchange-alt text-purple-500 mr-2"></i>
-                        Détails des Mouvements de Stock
-                      </h4>
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Vente FFO
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.venteFFO"
-                            name="venteFFO"
-                            type="number"
-                            min="0"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 50"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Livré Fournisseur
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.livreFou"
-                            name="livreFou"
-                            type="number"
-                            min="0"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 200"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Transfert
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.transfert"
-                            name="transfert"
-                            type="number"
-                            min="0"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 25"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Annonce Transfert
-                          </label>
-                          <input
-                            [(ngModel)]="currentStock.annonceTrf"
-                            name="annonceTrf"
-                            type="number"
-                            min="0"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:text-white transition-all duration-200 text-sm"
-                            placeholder="Ex: 15"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Modal Footer -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <div class="flex justify-end space-x-4">
-                        <button
-                          type="button"
-                          (click)="closeModal()"
-                          class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                        >
-                          <i class="fas fa-times mr-2"></i>
-                          Annuler
-                        </button>
-                        <button
-                          type="submit"
-                          class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2"
-                        >
-                          <i class="fas fa-save"></i>
-                          <span>{{ isEditing ? 'Modifier' : 'Créer' }}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            <!-- Stock Import Modal Template -->
-            <ng-template #importModalTemplate>
-              <div
-                class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
-              >
-                <!-- Modal Header -->
-                <div
-                  class="w-full px-8 py-8 text-center bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
-                >
-                  <div class="flex flex-col items-center space-y-4">
-                    <div
-                      class="p-4 bg-purple-100 dark:bg-purple-900 rounded-full"
-                    >
-                      <i
-                        class="fas fa-upload text-purple-600 dark:text-purple-300 text-3xl"
-                      ></i>
-                    </div>
-                    <div>
-                      <h3
-                        class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
-                      >
-                        Importer Données de Stock
-                      </h3>
-                      <p
-                        class="text-base text-gray-600 dark:text-gray-300 max-w-md"
-                      >
-                        Importez vos données de stock en téléchargeant un
-                        fichier CSV formaté
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Modal Body -->
-                <div class="flex-1 w-full px-8 py-8">
-                  <div class="flex flex-col space-y-8">
-                    <!-- Section: File Selection -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <h4
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                      >
-                        <i class="fas fa-file-csv text-green-500 mr-2"></i>
-                        Sélection du Fichier
-                      </h4>
-                      <div class="space-y-4">
-                        <div>
-                          <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                          >
-                            Fichier CSV <span class="text-red-500">*</span>
-                          </label>
-                          <div class="flex items-center justify-center w-full">
-                            <label
-                              class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-all duration-200"
-                              (dragover)="onDragOver($event)"
-                              (dragleave)="onDragLeave($event)"
-                              (drop)="onFileDrop($event)"
-                            >
-                              <div
-                                class="flex flex-col items-center justify-center pt-5 pb-6"
-                              >
-                                <i
-                                  class="fas fa-cloud-upload-alt text-gray-400 text-2xl mb-2"
-                                ></i>
-                                <p
-                                  class="mb-2 text-sm text-gray-500 dark:text-gray-400"
-                                >
-                                  <span class="font-semibold"
-                                    >Cliquez pour télécharger</span
-                                  >
-                                  ou glissez-déposez
-                                </p>
-                                <p
-                                  class="text-xs text-gray-500 dark:text-gray-400"
-                                >
-                                  CSV uniquement
-                                </p>
-                              </div>
-                              <input
-                                #fileInput
-                                type="file"
-                                accept=".csv"
-                                (change)="onFileSelected($event)"
-                                class="hidden"
-                              />
-                            </label>
-                          </div>
-                        </div>
-
-                        <div
-                          *ngIf="selectedFile"
-                          class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-                        >
-                          <div class="flex items-center space-x-3">
-                            <i
-                              class="fas fa-file-csv text-blue-600 dark:text-blue-400 text-xl"
-                            ></i>
-                            <div class="flex-1">
-                              <p
-                                class="text-sm font-medium text-blue-900 dark:text-blue-100"
-                              >
-                                {{ selectedFile.name }}
-                              </p>
-                              <p
-                                class="text-xs text-blue-700 dark:text-blue-300"
-                              >
-                                {{ (selectedFile.size / 1024).toFixed(2) }} KB
-                              </p>
-                            </div>
-                            <button
-                              (click)="clearSelectedFile()"
-                              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                            >
-                              <i class="fas fa-times"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Section: Import Instructions -->
-                    <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                    >
-                      <h4
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                      >
-                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                        Instructions d'Import
-                      </h4>
+              <div class="flex-1 overflow-y-auto p-8">
+                <!-- File Upload Section -->
+                <div class="mb-8">
+                  <div
+                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    (dragover)="onDragOver($event)"
+                    (dragleave)="onDragLeave($event)"
+                    (drop)="onFileDrop($event)"
+                  >
+                    <div class="flex flex-col items-center space-y-4">
                       <div
-                        class="space-y-3 text-sm text-gray-600 dark:text-gray-300"
+                        class="p-6 bg-purple-100 dark:bg-purple-900/50 rounded-full"
                       >
-                        <p class="flex items-start space-x-2">
-                          <i
-                            class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                          ></i>
-                          <span
-                            >Le fichier CSV doit contenir les colonnes:
-                            articleId, quantitePhysique, stockMin,
-                            valeur_Stock_TND</span
-                          >
+                        <i
+                          class="fas fa-cloud-upload-alt text-purple-600 dark:text-purple-400 text-4xl"
+                        ></i>
+                      </div>
+                      <div>
+                        <h4
+                          class="text-xl font-semibold text-gray-900 dark:text-white mb-2"
+                        >
+                          Télécharger un fichier CSV
+                        </h4>
+                        <p
+                          class="text-gray-600 dark:text-gray-400 text-sm mb-4"
+                        >
+                          Glissez-déposez votre fichier ou cliquez pour
+                          sélectionner
                         </p>
-                        <p class="flex items-start space-x-2">
-                          <i
-                            class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                          ></i>
-                          <span
-                            >La première ligne doit contenir les en-têtes de
-                            colonnes</span
-                          >
-                        </p>
-                        <p class="flex items-start space-x-2">
-                          <i
-                            class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                          ></i>
-                          <span
-                            >Les valeurs de stock doivent être des nombres
-                            décimaux positifs</span
-                          >
-                        </p>
-                        <p class="flex items-start space-x-2">
-                          <i
-                            class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                          ></i>
-                          <span
-                            >Colonnes optionnelles: venteFFO, livreFou,
-                            transfert, annonceTrf</span
-                          >
-                        </p>
+                        <input
+                          #fileInput
+                          type="file"
+                          accept=".csv"
+                          (change)="onFileSelected($event)"
+                          class="hidden"
+                          id="file-upload"
+                        />
+                        <label
+                          for="file-upload"
+                          class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200 shadow-lg hover:shadow-xl"
+                        >
+                          <i class="fas fa-file-upload mr-2"></i>
+                          Choisir un fichier
+                        </label>
                       </div>
                     </div>
 
-                    <!-- Modal Footer -->
+                    <!-- File Preview -->
                     <div
-                      class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
+                      *ngIf="selectedFile"
+                      class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600"
                     >
-                      <div class="flex justify-end space-x-4">
-                        <button
-                          type="button"
-                          (click)="closeModal()"
-                          class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                        >
-                          <i class="fas fa-times mr-2"></i>
-                          Annuler
-                        </button>
-                        <button
-                          (click)="importStocks()"
-                          [disabled]="!selectedFile || importing"
-                          class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
-                        >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
                           <i
-                            class="fas fa-spinner fa-spin mr-2"
-                            *ngIf="importing"
+                            class="fas fa-file-csv text-green-600 dark:text-green-400 text-2xl"
                           ></i>
-                          <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
-                          <span>{{
-                            importing ? 'Importation...' : 'Importer'
-                          }}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Stock Import Modal Template -->
-                  <ng-template #importModalTemplate>
-                    <div
-                      class="modal-content-wrapper bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 flex flex-col"
-                    >
-                      <!-- Modal Header -->
-                      <div
-                        class="w-full px-8 py-8 text-center bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-t-xl"
-                      >
-                        <div class="flex flex-col items-center space-y-4">
-                          <div
-                            class="p-4 bg-purple-100 dark:bg-purple-900 rounded-full"
-                          >
-                            <i
-                              class="fas fa-upload text-purple-600 dark:text-purple-300 text-3xl"
-                            ></i>
-                          </div>
                           <div>
-                            <h3
-                              class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
-                            >
-                              Importer Données de Stock
-                            </h3>
                             <p
-                              class="text-base text-gray-600 dark:text-gray-300 max-w-md"
+                              class="font-medium text-gray-900 dark:text-white"
                             >
-                              Importez vos données de stock en téléchargeant un
-                              fichier CSV formaté
+                              {{ selectedFile.name }}
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                              {{ (selectedFile.size / 1024).toFixed(2) }} KB
                             </p>
                           </div>
                         </div>
+                        <button
+                          (click)="clearSelectedFile()"
+                          class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                        >
+                          <i class="fas fa-trash text-lg"></i>
+                        </button>
                       </div>
-
-                      <!-- Modal Body -->
-                      <div class="flex-1 w-full px-8 py-8">
-                        <div class="flex flex-col space-y-8">
-                          <!-- Section: File Selection -->
-                          <div
-                            class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                          >
-                            <h4
-                              class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                            >
-                              <i
-                                class="fas fa-file-csv text-green-500 mr-2"
-                              ></i>
-                              Sélection du Fichier
-                            </h4>
-                            <div class="space-y-4">
-                              <div>
-                                <label
-                                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                                >
-                                  Fichier CSV
-                                  <span class="text-red-500">*</span>
-                                </label>
-                                <div
-                                  class="flex items-center justify-center w-full"
-                                >
-                                  <label
-                                    class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-all duration-200"
-                                    (dragover)="onDragOver($event)"
-                                    (dragleave)="onDragLeave($event)"
-                                    (drop)="onFileDrop($event)"
-                                  >
-                                    <div
-                                      class="flex flex-col items-center justify-center pt-5 pb-6"
-                                    >
-                                      <i
-                                        class="fas fa-cloud-upload-alt text-gray-400 text-2xl mb-2"
-                                      ></i>
-                                      <p
-                                        class="mb-2 text-sm text-gray-500 dark:text-gray-400"
-                                      >
-                                        <span class="font-semibold"
-                                          >Cliquez pour télécharger</span
-                                        >
-                                        ou glissez-déposez
-                                      </p>
-                                      <p
-                                        class="text-xs text-gray-500 dark:text-gray-400"
-                                      >
-                                        CSV uniquement
-                                      </p>
-                                    </div>
-                                    <input
-                                      #fileInput
-                                      type="file"
-                                      accept=".csv"
-                                      (change)="onFileSelected($event)"
-                                      class="hidden"
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-
-                              <div
-                                *ngIf="selectedFile"
-                                class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-                              >
-                                <div class="flex items-center space-x-3">
-                                  <i
-                                    class="fas fa-file-csv text-blue-600 dark:text-blue-400 text-xl"
-                                  ></i>
-                                  <div class="flex-1">
-                                    <p
-                                      class="text-sm font-medium text-blue-900 dark:text-blue-100"
-                                    >
-                                      {{ selectedFile.name }}
-                                    </p>
-                                    <p
-                                      class="text-xs text-blue-700 dark:text-blue-300"
-                                    >
-                                      {{
-                                        (selectedFile.size / 1024).toFixed(2)
-                                      }}
-                                      KB
-                                    </p>
-                                  </div>
-                                  <button
-                                    (click)="clearSelectedFile()"
-                                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                  >
-                                    <i class="fas fa-times"></i>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Section: Import Instructions -->
-                          <div
-                            class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                          >
-                            <h4
-                              class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
-                            >
-                              <i
-                                class="fas fa-info-circle text-blue-500 mr-2"
-                              ></i>
-                              Instructions d'Import
-                            </h4>
-                            <div
-                              class="space-y-3 text-sm text-gray-600 dark:text-gray-300"
-                            >
-                              <p class="flex items-start space-x-2">
-                                <i
-                                  class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                                ></i>
-                                <span
-                                  >Le fichier CSV doit contenir les colonnes:
-                                  articleId, quantitePhysique, stockMin,
-                                  valeur_Stock_TND</span
-                                >
-                              </p>
-                              <p class="flex items-start space-x-2">
-                                <i
-                                  class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                                ></i>
-                                <span
-                                  >La première ligne doit contenir les en-têtes
-                                  de colonnes</span
-                                >
-                              </p>
-                              <p class="flex items-start space-x-2">
-                                <i
-                                  class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                                ></i>
-                                <span
-                                  >Les valeurs de stock doivent être des nombres
-                                  décimaux positifs</span
-                                >
-                              </p>
-                              <p class="flex items-start space-x-2">
-                                <i
-                                  class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"
-                                ></i>
-                                <span
-                                  >Colonnes optionnelles: venteFFO, livreFou,
-                                  transfert, annonceTrf</span
-                                >
-                              </p>
-                            </div>
-                          </div>
-
-                          <!-- Modal Footer -->
-                          <div
-                            class="w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-6"
-                          >
-                            <div class="flex justify-end space-x-4">
-                              <button
-                                type="button"
-                                (click)="closeModal()"
-                                class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                              >
-                                <i class="fas fa-times mr-2"></i>
-                                Annuler
-                              </button>
-                              <button
-                                (click)="importStocks()"
-                                [disabled]="!selectedFile || importing"
-                                class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
-                              >
-                                <i
-                                  class="fas fa-spinner fa-spin mr-2"
-                                  *ngIf="importing"
-                                ></i>
-                                <i
-                                  class="fas fa-upload mr-2"
-                                  *ngIf="!importing"
-                                ></i>
-                                <span>{{
-                                  importing ? 'Importation...' : 'Importer'
-                                }}</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div></ng-template
-                  >
+                    </div>
+                  </div>
                 </div>
-              </div></ng-template
-            ></ng-template
-          ></ng-template
-        >
+
+                <!-- Format Information -->
+                <div class="mb-8">
+                  <h5
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+                  >
+                    <i
+                      class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"
+                    ></i>
+                    Format CSV Requis
+                  </h5>
+                  <div
+                    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4"
+                  >
+                    <p
+                      class="text-sm text-blue-800 dark:text-blue-300 mb-3 font-medium"
+                    >
+                      Votre fichier CSV doit contenir les colonnes suivantes :
+                    </p>
+                    <div
+                      class="grid grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-400 font-mono"
+                    >
+                      <div>• Id (optionnel)</div>
+                      <div>• ArticleId</div>
+                      <div>• QuantitePhysique</div>
+                      <div>• StockMin</div>
+                      <div>• VenteFFO</div>
+                      <div>• LivreFou</div>
+                      <div>• Transfert</div>
+                      <div>• AnnonceTrf</div>
+                      <div>• Valeur_Stock_TND</div>
+                      <div>• DepotId</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Warning Section -->
+                <div class="mb-6">
+                  <div
+                    class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
+                  >
+                    <div class="flex items-start space-x-3">
+                      <i
+                        class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl mt-0.5"
+                      ></i>
+                      <div>
+                        <h6
+                          class="font-semibold text-red-800 dark:text-red-300 mb-2"
+                        >
+                          Attention : Remplacement Complet
+                        </h6>
+                        <p class="text-sm text-red-700 dark:text-red-400">
+                          Cette action remplacera TOUTES les données de stock
+                          existantes. Cette opération ne peut pas être annulée.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modal Footer -->
+              <div
+                class="border-t border-gray-200 dark:border-gray-700 px-8 py-6 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl"
+              >
+                <div class="flex justify-between items-center">
+                  <button
+                    type="button"
+                    (click)="closeModal()"
+                    class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                  </button>
+
+                  <!-- Debug buttons -->
+                  <div class="flex space-x-2" *ngIf="selectedFile">
+                    <button
+                      type="button"
+                      (click)="testApiConnection()"
+                      class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                    >
+                      🔍 Test API
+                    </button>
+                    <button
+                      type="button"
+                      (click)="analyzeFileFormat()"
+                      class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg"
+                    >
+                      📋 Analyze CSV
+                    </button>
+                  </div>
+
+                  <button
+                    (click)="showImportWarning()"
+                    [disabled]="!selectedFile || importing"
+                    class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 disabled:transform-none disabled:shadow-none"
+                  >
+                    <i
+                      class="fas fa-spinner fa-spin mr-2"
+                      *ngIf="importing"
+                    ></i>
+                    <i class="fas fa-upload mr-2" *ngIf="!importing"></i>
+                    <span>{{ importing ? 'Importation...' : 'Importer' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </ng-template>
       </div>
     </div>
   `,
 })
 export class StockListComponent implements OnInit {
   @ViewChild('stockModalTemplate') stockModalTemplate!: TemplateRef<any>;
-  @ViewChild('importModalTemplate') importModalTemplate!: TemplateRef<any>;
+  @ViewChild('stockImportModal') stockImportModal!: TemplateRef<any>;
 
+  // Inject services using the inject function
+  private http = inject(HttpClient);
+  private articleService = inject(ArticleService);
+  private depotService = inject(DepotService);
+  private modalService = inject(ModalService);
+  private confirmationService = inject(ConfirmationService);
+  private notificationService = inject(NotificationService);
+  private viewContainerRef = inject(ViewContainerRef);
+  
+  // API URL
+  private apiUrl = 'http://localhost:5256/api/Stock';
+
+  // Component properties
   stocks: Stock[] = [];
   filteredStocks: Stock[] = [];
   articles: Article[] = [];
   depots: Depot[] = [];
+  searchTerm: string = '';
+  minValue: number = 0;
+  maxValue: number = 0;
+  minQuantity: number = 0;
+  maxQuantity: number = 0;
 
-  // Tabs
-  activeTab = 'all';
-
-  // Filters
-  searchTerm = '';
-  minQuantity: number | null = null;
-  maxQuantity: number | null = null;
-  minValue: number | null = null;
-
-  // Modals state
-  isEditing = false;
-
-  // Current stock for add/edit
-  currentStock: Partial<Stock> = {};
-
-  // Import
+  // Modal states
+  isEditing: boolean = false;
+  showToast: boolean = false;
+  toastMessage: string = '';
+  toastType: 'success' | 'error' | 'warning' | 'info' = 'info';
+  importing: boolean = false;
   selectedFile: File | null = null;
-  importing = false;
 
-  // Computed values
-  lowStockCount = 0;
-  outOfStockCount = 0;
+  // Tab management
+  activeTab: 'all' | 'low' | 'out' = 'all';
 
-  // Toast properties
-  showToast = false;
-  toastMessage = '';
-  toastType: 'success' | 'error' | 'info' = 'success';
+  // Current stock being edited
+  currentStock: any = this.getEmptyStock();
 
   // Stock alerts
   stockAlerts: StockAlert[] = [];
-
-  constructor(
-    private stockService: StockService,
-    private articleService: ArticleService,
-    private depotService: DepotService,
-    private modalService: ModalService,
-    private viewContainer: ViewContainerRef,
-    private confirmationService: ConfirmationService,
-    private notificationService: NotificationService
-  ) {}
 
   ngOnInit() {
     this.loadStocks();
     this.loadArticles();
     this.loadDepots();
+    this.generateStockAlerts();
   }
 
+  // Load data methods
   loadStocks() {
-    this.stockService.getAll().subscribe({
-      next: (stocks) => {
+    this.http.get<Stock[]>(this.apiUrl).subscribe({
+      next: (stocks: Stock[]) => {
         this.stocks = stocks;
         this.filterStocks();
-        this.calculateCounts();
-        this.checkStockAlerts();
+        this.generateStockAlerts();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading stocks:', error);
-        this.showToastMessage('Erreur lors du chargement des stocks.', 'error');
+        this.showToastMessage('Erreur lors du chargement des stocks', 'error');
       },
     });
   }
 
   loadArticles() {
     this.articleService.getAll().subscribe({
-      next: (articles) => {
+      next: (articles: Article[]) => {
         this.articles = articles;
       },
       error: (error) => {
         console.error('Error loading articles:', error);
-        this.showToastMessage(
-          'Erreur lors du chargement des articles.',
-          'error'
-        );
       },
     });
   }
@@ -2031,286 +1846,387 @@ export class StockListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading depots:', error);
-        this.showToastMessage('Erreur lors du chargement des dépôts.', 'error');
       },
     });
   }
 
-  calculateCounts() {
-    this.lowStockCount = this.stocks.filter(
-      (s) => s.quantitePhysique > 0 && s.quantitePhysique <= s.stockMin
-    ).length;
-    this.outOfStockCount = this.stocks.filter(
-      (s) => s.quantitePhysique === 0
-    ).length;
-  }
-
-  // Stock Alert Methods
-  checkStockAlerts() {
-    const newAlerts: StockAlert[] = [];
-
-    this.stocks.forEach((stock) => {
-      // Check for out of stock
-      if (stock.quantitePhysique === 0) {
-        const alert: StockAlert = {
-          id: `out_of_stock_${stock.id}`,
-          type: 'out_of_stock',
-          title: 'RUPTURE DE STOCK CRITIQUE',
-          message: `L'article ${
-            stock.article?.libelle || 'ID: ' + stock.articleId
-          } est en rupture de stock complète !`,
-          stock,
-          timestamp: new Date(),
-          emailSent: false,
-          dismissed: false,
-        };
-        newAlerts.push(alert);
-      }
-      // Check for low stock
-      else if (stock.quantitePhysique <= stock.stockMin) {
-        const alert: StockAlert = {
-          id: `low_stock_${stock.id}`,
-          type: 'low_stock',
-          title: 'STOCK FAIBLE - ATTENTION',
-          message: `L'article ${
-            stock.article?.libelle || 'ID: ' + stock.articleId
-          } a un stock critique (${
-            stock.quantitePhysique
-          } restant, minimum requis: ${stock.stockMin})`,
-          stock,
-          timestamp: new Date(),
-          emailSent: false,
-          dismissed: false,
-        };
-        newAlerts.push(alert);
-      }
-    });
-
-    // Update alerts and send emails
-    this.stockAlerts = newAlerts;
-    if (this.stockAlerts.length > 0) {
-      this.sendStockAlertEmails();
-      this.showStockAlertNotifications();
-    }
-  }
-
-  sendStockAlertEmails() {
-    this.stockAlerts.forEach((alert) => {
-      if (!alert.emailSent) {
-        // Call backend email service
-        this.stockService.sendStockAlert(alert).subscribe({
-          next: () => {
-            alert.emailSent = true;
-            console.log(
-              `Email alert sent for ${alert.type}: ${alert.stock.id}`
-            );
-          },
-          error: (error) => {
-            console.error('Error sending email alert:', error);
-          },
-        });
-      }
-    });
-  }
-
-  showStockAlertNotifications() {
-    this.stockAlerts.forEach((alert) => {
-      if (alert.type === 'out_of_stock') {
-        this.notificationService.error(
-          'RUPTURE DE STOCK !',
-          `Article ${
-            alert.stock.article?.libelle || 'ID: ' + alert.stock.articleId
-          } en rupture complète`,
-          0 // Don't auto-hide critical alerts
-        );
-      } else {
-        this.notificationService.warning(
-          'Stock Faible',
-          `Article ${
-            alert.stock.article?.libelle || 'ID: ' + alert.stock.articleId
-          } nécessite un réapprovisionnement`,
-          8000
-        );
-      }
-    });
-  }
-
-  getAlertClasses(alert: StockAlert): string {
-    if (alert.type === 'out_of_stock') {
-      return 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 dark:border-red-600';
-    } else {
-      return 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 dark:border-yellow-600';
-    }
-  }
-
-  formatAlertTime(timestamp: Date): string {
-    const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-
-    if (minutes < 1) return "À l'instant";
-    if (minutes < 60) return `Il y a ${minutes} min`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
-
-    const days = Math.floor(hours / 24);
-    return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
-  }
-
-  dismissAlert(alert: StockAlert) {
-    alert.dismissed = true;
-    this.stockAlerts = this.stockAlerts.filter((a) => !a.dismissed);
-    this.notificationService.info(
-      'Alerte ignorée',
-      "L'alerte de stock a été supprimée"
-    );
-  }
-
-  dismissAllAlerts() {
-    this.stockAlerts = [];
-    this.notificationService.info(
-      'Alertes ignorées',
-      'Toutes les alertes de stock ont été supprimées'
-    );
-  }
-
-  resendAlertEmails() {
-    this.stockAlerts.forEach((alert) => (alert.emailSent = false));
-    this.sendStockAlertEmails();
-    this.notificationService.success(
-      'Emails renvoyés',
-      'Les alertes de stock ont été renvoyées par email'
-    );
-  }
-
+  // Stock management methods
   filterStocks() {
-    let filtered = [...this.stocks];
+    let filtered = this.stocks;
 
-    // Apply search filter
-    if (this.searchTerm) {
-      const searchLower = this.searchTerm.toLowerCase();
+    // Filter by tab
+    if (this.activeTab === 'low') {
       filtered = filtered.filter(
         (stock) =>
-          stock.article?.codeArticle?.toLowerCase().includes(searchLower) ||
-          stock.article?.libelle?.toLowerCase().includes(searchLower) ||
-          stock.id.toString().includes(searchLower)
+          stock.quantitePhysique <= stock.stockMin && stock.quantitePhysique > 0
       );
+    } else if (this.activeTab === 'out') {
+      filtered = filtered.filter((stock) => stock.quantitePhysique === 0);
     }
 
-    // Apply quantity filters
-    if (this.minQuantity !== null) {
+    // Filter by search term
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (stock) => stock.quantitePhysique >= this.minQuantity!
+        (stock) =>
+          stock.article?.libelle?.toLowerCase().includes(term) ||
+          stock.article?.codeArticle?.toLowerCase().includes(term)
       );
     }
 
-    if (this.maxQuantity !== null) {
+    // Filter by value range
+    if (this.minValue > 0) {
       filtered = filtered.filter(
-        (stock) => stock.quantitePhysique <= this.maxQuantity!
+        (stock) => stock.valeur_Stock_TND >= this.minValue
       );
     }
-
-    // Apply value filter
-    if (this.minValue !== null) {
+    if (this.maxValue > 0) {
       filtered = filtered.filter(
-        (stock) => stock.valeur_Stock_TND >= this.minValue!
+        (stock) => stock.valeur_Stock_TND <= this.maxValue
       );
-    }
-
-    // Apply tab filter
-    switch (this.activeTab) {
-      case 'low':
-        filtered = filtered.filter(
-          (stock) =>
-            stock.quantitePhysique > 0 &&
-            stock.quantitePhysique <= stock.stockMin
-        );
-        break;
-      case 'out':
-        filtered = filtered.filter((stock) => stock.quantitePhysique === 0);
-        break;
     }
 
     this.filteredStocks = filtered;
   }
 
-  // Modal methods
+  // Modal management
   openAddModal() {
-    this.currentStock = {
-      depotId: this.depots.length > 0 ? this.depots[0].id : 1,
-    };
-    this.modalService.openModal(this.stockModalTemplate, this.viewContainer);
+    this.isEditing = false;
+    this.currentStock = this.getEmptyStock();
+    this.modalService.openModal(this.stockModalTemplate, this.viewContainerRef);
   }
 
   openEditModal(stock: Stock) {
     this.isEditing = true;
-    this.currentStock = {
-      ...stock,
-      depotId:
-        stock.depotId || (this.depots.length > 0 ? this.depots[0].id : 1),
-    };
-    this.modalService.openModal(this.stockModalTemplate, this.viewContainer);
+    this.currentStock = { ...stock };
+    this.modalService.openModal(this.stockModalTemplate, this.viewContainerRef);
   }
 
   openImportModal() {
-    this.modalService.openModal(this.importModalTemplate, this.viewContainer);
+    this.selectedFile = null;
+    this.importing = false;
+    this.modalService.openModal(this.stockImportModal, this.viewContainerRef);
   }
 
   closeModal() {
     this.modalService.closeModal();
-    this.currentStock = {};
+  }
+
+  // Helper methods
+  getEmptyStock() {
+    return {
+      id: 0,
+      quantitePhysique: 0,
+      stockMin: 0,
+      venteFFO: 0,
+      livreFou: 0,
+      transfert: 0,
+      annonceTrf: 0,
+      valeur_Stock_TND: 0,
+      articleId: null,
+      depotId: null,
+      article: null,
+      depot: null,
+    };
+  }
+
+  // Save stock
+  saveStock() {
+    if (this.isEditing) {
+      this.http
+        .put<Stock>(`${this.apiUrl}/${this.currentStock.id}`, this.currentStock)
+        .subscribe({
+          next: () => {
+            this.showToastMessage('Stock modifié avec succès!', 'success');
+            this.closeModal();
+            this.loadStocks();
+          },
+          error: (error: any) => {
+            console.error('Error updating stock:', error);
+            this.showToastMessage('Erreur lors de la modification', 'error');
+          },
+        });
+    } else {
+      this.http.post<Stock>(this.apiUrl, this.currentStock).subscribe({
+        next: () => {
+          this.showToastMessage('Stock créé avec succès!', 'success');
+          this.closeModal();
+          this.loadStocks();
+        },
+        error: (error: any) => {
+          console.error('Error creating stock:', error);
+          this.showToastMessage('Erreur lors de la création', 'error');
+        },
+      });
+    }
+  }
+
+  // Delete stock
+  deleteStock(id: number) {
+    this.confirmationService
+      .confirmDangerousAction(
+        'Confirmer la suppression',
+        'Êtes-vous sûr de vouloir supprimer ce stock? Cette action ne peut pas être annulée.'
+      )
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.http.delete(`${this.apiUrl}/${id}`).subscribe({
+            next: () => {
+              this.showToastMessage('Stock supprimé avec succès!', 'success');
+              this.loadStocks();
+            },
+            error: (error: any) => {
+              console.error('Error deleting stock:', error);
+              this.showToastMessage('Erreur lors de la suppression', 'error');
+            },
+          });
+        }
+      });
+  }
+
+  // File upload methods
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      console.log('File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+      });
+
+      // Validate file type
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        this.showToastMessage('Veuillez sélectionner un fichier CSV.', 'error');
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        this.showToastMessage(
+          'Le fichier est trop volumineux (max 10MB).',
+          'error'
+        );
+        return;
+      }
+
+      this.selectedFile = file;
+    }
+  }
+
+  showImportWarning() {
+    if (!this.selectedFile) {
+      this.showToastMessage('Veuillez sélectionner un fichier CSV.', 'error');
+      return;
+    }
+
+    // Store filename to avoid null reference issues
+    const fileName = this.selectedFile.name;
+
+    // Close the import modal first
+    this.closeModal();
+
+    // Show warning confirmation using custom modal
+    this.confirmationService
+      .confirmDangerousAction(
+        '⚠️ ATTENTION: REMPLACEMENT DES DONNEES DE STOCK !',
+        'Cette action va remplacer TOUTES les données de stock existantes avec le contenu du fichier "' +
+          fileName +
+          '". Cette opération NE PEUT PAS être annulée. Voulez-vous vraiment continuer?'
+      )
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.importStocks();
+        } else {
+          // If user cancels, reopen the import modal
+          setTimeout(() => {
+            this.openImportModal();
+          }, 300);
+        }
+      });
+  }
+
+  importStocks() {
+    if (!this.selectedFile) {
+      this.showToastMessage('Veuillez sélectionner un fichier CSV.', 'error');
+      return;
+    }
+
+    // Store file reference to prevent loss during async operations
+    const fileToImport = this.selectedFile;
+
+    console.log('🚀 Component: Starting import with file:', fileToImport);
+    console.log('📋 File details:', {
+      name: fileToImport.name,
+      size: fileToImport.size,
+      type: fileToImport.type,
+    });
+
+    // Test API connectivity first to ensure backend is running
+    console.log('🔍 Testing API connectivity...');
+    this.http.get<Stock[]>(this.apiUrl).subscribe({
+      next: (stocks: Stock[]) => {
+        console.log('✅ API is reachable, current stocks:', stocks.length);
+        this.performImport(fileToImport);
+      },
+      error: (error: any) => {
+        console.error('❌ API connectivity test failed:', error);
+        this.importing = false;
+        this.showToastMessage(
+          "Impossible de contacter le serveur. Vérifiez que l'API est en cours d'exécution sur http://localhost:5256",
+          'error'
+        );
+      },
+    });
+  }
+
+  private performImport(file: File) {
+    this.importing = true;
+    this.showToastMessage('Import en cours...', 'info');
+
+    console.log('📤 Component: Calling direct HTTP import...');
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<any>(`${this.apiUrl}/import-stocks`, formData).subscribe({
+      next: (response: any) => {
+        console.log('✅ Component: Import successful:', response);
+        this.importing = false;
+        this.selectedFile = null;
+        this.showToastMessage('Import réussi!', 'success');
+        this.closeModal();
+        this.loadStocks();
+      },
+      error: (error: any) => {
+        console.error('❌ Component: Import error details:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+        console.error('Error body:', error.error);
+
+        this.importing = false;
+
+        let errorMessage = "Erreur lors de l'import.";
+
+        // Handle specific HTTP status codes with more detailed messages
+        if (error.status === 0) {
+          errorMessage =
+            "Impossible de contacter le serveur. Vérifiez que l'API est en cours d'exécution sur http://localhost:5256";
+        } else if (error.status === 400) {
+          errorMessage =
+            error.error?.message ||
+            error.error ||
+            'Fichier CSV invalide. Vérifiez le format des colonnes.';
+        } else if (error.status === 500) {
+          errorMessage =
+            "Erreur serveur lors de l'import. Vérifiez les logs du serveur.";
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.error?.error) {
+          errorMessage = error.error.error;
+        } else if (typeof error.error === 'string') {
+          errorMessage = error.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        this.showToastMessage(errorMessage, 'error');
+      },
+    });
+  }
+
+  clearSelectedFile() {
     this.selectedFile = null;
   }
 
-  // Toast methods
-  showToastMessage(message: string, type: 'success' | 'error' | 'info'): void {
+  // Toast management
+  showToastMessage(
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info'
+  ) {
     this.toastMessage = message;
     this.toastType = type;
     this.showToast = true;
 
-    // Auto-hide toast after 4 seconds
-    setTimeout(() => {
-      this.hideToast();
-    }, 4000);
-  }
-
-  hideToast(): void {
-    this.showToast = false;
-    setTimeout(() => {
-      this.toastMessage = '';
-    }, 300);
-  }
-
-  // Toast helper methods
-  getToastClasses(): string {
-    const baseClasses = 'translate-y-0 opacity-100';
-    switch (this.toastType) {
-      case 'success':
-        return baseClasses + ' bg-gradient-to-r from-green-500 to-green-600';
-      case 'error':
-        return baseClasses + ' bg-gradient-to-r from-red-500 to-red-600';
-      case 'info':
-        return baseClasses + ' bg-gradient-to-r from-blue-500 to-blue-600';
-      default:
-        return baseClasses + ' bg-gradient-to-r from-gray-500 to-gray-600';
+    // Auto-hide after 5 seconds for success/info, keep errors visible
+    if (type === 'success' || type === 'info') {
+      setTimeout(() => {
+        this.hideToast();
+      }, 5000);
     }
+  }
+
+  hideToast() {
+    this.showToast = false;
   }
 
   getToastIconClass(): string {
     switch (this.toastType) {
       case 'success':
-        return 'fas fa-check-circle';
+        return 'fas fa-check-circle text-green-500';
       case 'error':
-        return 'fas fa-exclamation-circle';
+        return 'fas fa-times-circle text-red-500';
+      case 'warning':
+        return 'fas fa-exclamation-triangle text-yellow-500';
       case 'info':
-        return 'fas fa-info-circle';
       default:
-        return 'fas fa-bell';
+        return 'fas fa-info-circle text-blue-500';
     }
   }
 
-  // File upload methods
+  // Stock statistics and helpers
+  getTotalItems(): number {
+    return this.stocks.length;
+  }
+
+  get lowStockCount(): number {
+    return this.stocks.filter(
+      (stock) =>
+        stock.quantitePhysique <= stock.stockMin && stock.quantitePhysique > 0
+    ).length;
+  }
+
+  get outOfStockCount(): number {
+    return this.stocks.filter((stock) => stock.quantitePhysique === 0).length;
+  }
+
+  getTotalValue(): number {
+    return this.stocks.reduce(
+      (total, stock) => total + stock.valeur_Stock_TND,
+      0
+    );
+  }
+
+  getTotalQuantity(): number {
+    return this.stocks.reduce(
+      (total, stock) => total + stock.quantitePhysique,
+      0
+    );
+  }
+
+  // Alert management methods
+  formatAlertTime(timestamp: Date): string {
+    return timestamp.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  dismissAlert(alert: StockAlert) {
+    this.stockAlerts = this.stockAlerts.filter((a) => a.id !== alert.id);
+  }
+
+  dismissAllAlerts() {
+    this.stockAlerts = [];
+  }
+
+  resendAlertEmails() {
+    // Implementation for resending alert emails
+    this.showToastMessage("Emails d'alerte renvoyés!", 'success');
+  }
+
+  // Drag and drop methods
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -2327,321 +2243,82 @@ export class StockListComponent implements OnInit {
 
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      this.selectedFile = files[0];
-    }
-  }
-
-  clearSelectedFile() {
-    this.selectedFile = null;
-  }
-
-  editStock(stock: Stock) {
-    this.openEditModal(stock);
-  }
-
-  deleteStock(id: number) {
-    const stock = this.stocks.find((s) => s.id === id);
-    const stockDescription = stock
-      ? `stock de l'article ${stock.article?.libelle || 'ID ' + id}`
-      : 'cet enregistrement de stock';
-
-    this.confirmationService
-      .confirmDelete(stockDescription)
-      .subscribe((confirmed) => {
-        if (confirmed) {
-          this.stockService.delete(id).subscribe({
-            next: () => {
-              this.showToastMessage('Stock supprimé avec succès!', 'success');
-              this.loadStocks();
-            },
-            error: (error) => {
-              console.error('Error deleting stock:', error);
-              this.showToastMessage(
-                'Erreur lors de la suppression du stock.',
-                'error'
-              );
-            },
-          });
-        }
-      });
-  }
-
-  saveStock() {
-    // Validate required fields
-    if (
-      !this.currentStock.articleId ||
-      this.currentStock.quantitePhysique === undefined ||
-      this.currentStock.stockMin === undefined ||
-      this.currentStock.valeur_Stock_TND === undefined ||
-      !this.currentStock.depotId
-    ) {
-      this.showToastMessage(
-        'Veuillez remplir tous les champs requis.',
-        'error'
-      );
-      return;
-    }
-
-    // Calculer la valeur du stock avant de sauvegarder
-    if (this.currentStock.articleId) {
-      const article = this.articles.find(
-        (a) => a.id === this.currentStock.articleId
-      );
-      if (article) {
-        this.currentStock.valeur_Stock_TND =
-          this.stockService.calculateStockValue(
-            this.currentStock as Stock,
-            article
-          );
+      const file = files[0];
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        this.selectedFile = file;
+        this.showToastMessage(
+          'Fichier ' + file.name + ' sélectionné',
+          'success'
+        );
+      } else {
+        this.showToastMessage('Veuillez sélectionner un fichier CSV', 'error');
       }
     }
-
-    // Prepare the stock data by ensuring all required fields are present and properly typed
-    const stockData: any = {
-      ArticleId: parseInt(String(this.currentStock.articleId), 10),
-      QuantitePhysique: parseInt(
-        String(this.currentStock.quantitePhysique || 0),
-        10
-      ),
-      StockMin: parseInt(String(this.currentStock.stockMin || 0), 10),
-      VenteFFO: parseInt(String(this.currentStock.venteFFO || 0), 10),
-      LivreFou: parseInt(String(this.currentStock.livreFou || 0), 10),
-      Transfert: parseInt(String(this.currentStock.transfert || 0), 10),
-      AnnonceTrf: parseInt(String(this.currentStock.annonceTrf || 0), 10),
-      Valeur_Stock_TND: parseFloat(
-        String(this.currentStock.valeur_Stock_TND || 0)
-      ),
-      DepotId: parseInt(
-        String(
-          this.currentStock.depotId ||
-            (this.depots.length > 0 ? this.depots[0].id : 1)
-        ),
-        10
-      ),
-    };
-
-    // Include ID for updates
-    if (this.isEditing && this.currentStock.id) {
-      stockData.Id = this.currentStock.id;
-    }
-
-    // Validate that depotId is valid
-    if (
-      !this.depots.find((d) => d.id === stockData.DepotId) ||
-      isNaN(stockData.DepotId)
-    ) {
-      this.showToastMessage(
-        'Dépôt non valide. Veuillez sélectionner un dépôt existant.',
-        'error'
-      );
-      return;
-    }
-
-    // Validate that articleId is valid
-    if (
-      !this.articles.find((a) => a.id === stockData.ArticleId) ||
-      isNaN(stockData.ArticleId)
-    ) {
-      this.showToastMessage(
-        'Article non valide. Veuillez sélectionner un article existant.',
-        'error'
-      );
-      return;
-    }
-
-    // Validate that all numeric values are valid
-    if (
-      isNaN(stockData.QuantitePhysique) ||
-      isNaN(stockData.StockMin) ||
-      isNaN(stockData.VenteFFO) ||
-      isNaN(stockData.LivreFou) ||
-      isNaN(stockData.Transfert) ||
-      isNaN(stockData.AnnonceTrf) ||
-      isNaN(stockData.Valeur_Stock_TND)
-    ) {
-      this.showToastMessage(
-        'Toutes les valeurs numériques doivent être valides.',
-        'error'
-      );
-      return;
-    }
-
-    console.log('Stock data being sent:', stockData);
-
-    if (this.isEditing && this.currentStock.id) {
-      this.stockService.update(this.currentStock.id, stockData).subscribe({
-        next: () => {
-          this.showToastMessage('Stock mis à jour avec succès!', 'success');
-          this.loadStocks();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error updating stock:', error);
-          console.error(
-            'Full error object:',
-            JSON.stringify(error.error, null, 2)
-          );
-
-          let errorMessage = 'Erreur lors de la mise à jour du stock.';
-
-          if (error.status === 400) {
-            if (error.error?.errors) {
-              // Handle validation errors
-              console.error('Validation errors:', error.error.errors);
-              const validationErrors = Object.keys(error.error.errors)
-                .map((key) => `${key}: ${error.error.errors[key].join(', ')}`)
-                .join('\n');
-              errorMessage = `Erreurs de validation:\n${validationErrors}`;
-            } else if (error.error?.message) {
-              errorMessage = error.error.message;
-            } else if (error.error?.title) {
-              errorMessage = error.error.title;
-            } else if (typeof error.error === 'string') {
-              errorMessage = error.error;
-            } else {
-              // Log the full error structure for debugging
-              console.error('Unknown 400 error structure:', error.error);
-              errorMessage = `Erreur de validation: ${
-                error.error?.title || "Structure d'erreur inconnue"
-              }`;
-            }
-          } else if (error.status === 404) {
-            errorMessage = 'Stock non trouvé.';
-          } else if (error.status === 500) {
-            errorMessage = 'Erreur serveur lors de la mise à jour.';
-          }
-
-          this.showToastMessage(errorMessage, 'error');
-        },
-      });
-    } else {
-      this.stockService.create(stockData).subscribe({
-        next: () => {
-          this.showToastMessage('Stock créé avec succès!', 'success');
-          this.loadStocks();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error creating stock:', error);
-          console.error(
-            'Full error object:',
-            JSON.stringify(error.error, null, 2)
-          );
-
-          let errorMessage = 'Erreur lors de la création du stock.';
-
-          if (error.status === 400) {
-            if (error.error?.errors) {
-              // Handle validation errors
-              console.error('Validation errors:', error.error.errors);
-              const validationErrors = Object.keys(error.error.errors)
-                .map((key) => `${key}: ${error.error.errors[key].join(', ')}`)
-                .join('\n');
-              errorMessage = `Erreurs de validation:\n${validationErrors}`;
-            } else if (error.error?.message) {
-              errorMessage = error.error.message;
-            } else if (error.error?.title) {
-              errorMessage = error.error.title;
-            } else if (typeof error.error === 'string') {
-              errorMessage = error.error;
-            } else {
-              // Log the full error structure for debugging
-              console.error('Unknown 400 error structure:', error.error);
-              errorMessage = `Erreur de validation: ${
-                error.error?.title || "Structure d'erreur inconnue"
-              }`;
-            }
-          } else if (error.status === 500) {
-            errorMessage = 'Erreur serveur lors de la création.';
-          }
-
-          this.showToastMessage(errorMessage, 'error');
-        },
-      });
-    }
   }
 
-  onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
-  }
+  // Stock alerts management
+  generateStockAlerts() {
+    this.stockAlerts = [];
 
-  importStocks() {
-    if (!this.selectedFile) {
-      this.showToastMessage('Veuillez sélectionner un fichier CSV.', 'error');
-      return;
-    }
-
-    this.importing = true;
-    this.stockService.importStocks(this.selectedFile).subscribe({
-      next: (response) => {
-        this.importing = false;
-        this.showToastMessage('Import réussi!', 'success');
-        this.loadStocks();
-        this.closeModal();
-      },
-      error: (error) => {
-        this.importing = false;
-        console.error('Error importing stocks:', error);
-        this.showToastMessage("Erreur lors de l'import.", 'error');
-      },
+    this.stocks.forEach((stock) => {
+      if (stock.quantitePhysique === 0) {
+        this.stockAlerts.push({
+          id: 'out_' + stock.id,
+          type: 'out_of_stock',
+          title: 'Rupture de Stock',
+          message:
+            "L'article " +
+            (stock.article?.libelle || 'Unknown') +
+            ' est en rupture de stock',
+          stock: stock,
+          timestamp: new Date(),
+          emailSent: false,
+          dismissed: false,
+        });
+      } else if (stock.quantitePhysique <= stock.stockMin) {
+        this.stockAlerts.push({
+          id: 'low_' + stock.id,
+          type: 'low_stock',
+          title: 'Stock Faible',
+          message:
+            "L'article " +
+            (stock.article?.libelle || 'Unknown') +
+            ' a un niveau de stock faible',
+          stock: stock,
+          timestamp: new Date(),
+          emailSent: false,
+          dismissed: false,
+        });
+      }
     });
   }
 
-  getStockStatus(stock: Stock): string {
-    if (stock.quantitePhysique === 0) {
-      return 'Out of Stock';
-    } else if (stock.quantitePhysique <= stock.stockMin) {
-      return 'Low Stock';
+  getAlertClasses(alert: StockAlert): string {
+    const baseClasses = 'border-l-4';
+    if (alert.type === 'out_of_stock') {
+      return baseClasses + ' border-red-500 bg-red-50 dark:bg-red-900/20';
+    } else if (alert.type === 'low_stock') {
+      return (
+        baseClasses + ' border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+      );
     }
-    return 'In Stock';
+    return baseClasses;
   }
 
-  getStockStatusClass(stock: Stock): string {
-    if (stock.quantitePhysique === 0) {
-      return 'bg-red-100 text-red-800';
-    } else if (stock.quantitePhysique <= stock.stockMin) {
-      return 'bg-yellow-100 text-yellow-800';
-    }
-    return 'bg-green-100 text-green-800';
-  }
-
-  getTotalItems(): number {
-    return this.stocks.length;
-  }
-
-  getTotalQuantity(): number {
-    return this.stocks.reduce(
-      (total, stock) => total + stock.quantitePhysique,
-      0
-    );
-  }
-
-  getTotalValue(): number {
-    return this.stocks.reduce(
-      (total, stock) => total + stock.valeur_Stock_TND,
-      0
-    );
-  }
-
-  getEmptyMessage(): string {
-    switch (this.activeTab) {
-      case 'low':
-        return 'Aucun stock faible trouvé.';
-      case 'out':
-        return 'Aucune rupture de stock trouvée.';
-      default:
-        return 'Aucun stock trouvé.';
-    }
-  }
-
-  // Tab styling helper
+  // Tab styling
   getTabClasses(tab: string): string {
     const baseClasses =
       'px-6 py-3 rounded-xl font-medium font-poppins transition-all duration-300 transform hover:scale-105';
     if (this.activeTab === tab) {
-      return `${baseClasses} bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg`;
+      return (
+        baseClasses +
+        ' bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+      );
     }
-    return `${baseClasses} bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-700/70`;
+    return (
+      baseClasses +
+      ' bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-700/70'
+    );
   }
 
   // Enhanced stock status with better styling
@@ -2670,17 +2347,72 @@ export class StockListComponent implements OnInit {
       case 'low':
         return 'Aucun article avec un stock faible. Tous vos niveaux de stock sont optimaux.';
       case 'out':
-        return 'Aucune rupture de stock détectée. Excellent travail de gestion !';
+        return 'Aucun article en rupture de stock. Tous vos articles sont disponibles.';
       default:
-        if (
-          this.searchTerm ||
-          this.minQuantity ||
-          this.maxQuantity ||
-          this.minValue
-        ) {
-          return 'Aucun stock ne correspond à vos critères de recherche.';
-        }
-        return 'Votre inventaire est vide. Commencez par ajouter des stocks.';
+        return 'Aucun stock trouvé. Commencez par créer votre premier stock.';
     }
+  }
+
+  // Debug methods for troubleshooting CSV import
+  testApiConnection() {
+    console.log('Testing API connection...');
+    this.http.get<Stock[]>(this.apiUrl).subscribe({
+      next: (stocks: Stock[]) => {
+        console.log(
+          'API connection successful:',
+          stocks.length,
+          'stocks found'
+        );
+        this.showToastMessage(
+          'API connectee! ' + stocks.length + ' stocks trouves.',
+          'success'
+        );
+      },
+      error: (error: any) => {
+        console.error('API connection failed:', error);
+        this.showToastMessage("Impossible de contacter l'API!", 'error');
+      },
+    });
+  }
+
+  analyzeFileFormat() {
+    if (!this.selectedFile) {
+      this.showToastMessage('Aucun fichier selectionne', 'error');
+      return;
+    }
+
+    console.log('Analyzing file format...');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const lines = content.split('\n');
+
+      console.log('File Analysis Results:');
+      console.log('File name:', this.selectedFile?.name);
+      console.log('File size:', this.selectedFile?.size, 'bytes');
+      console.log('Total lines:', lines.length);
+      console.log('Header:', lines[0]);
+      console.log('First data line:', lines[1]);
+
+      // Check separators
+      const firstDataLine = lines[1] || '';
+      const commaCount = (firstDataLine.match(/,/g) || []).length;
+      const tabCount = (firstDataLine.match(/\t/g) || []).length;
+
+      let message = 'Analyse du fichier: ';
+      message += 'Lignes: ' + lines.length + ', ';
+      message += 'Virgules: ' + commaCount + ', Tabs: ' + tabCount + ', ';
+      message += 'En-tete: ' + lines[0] + '';
+
+      if (tabCount > commaCount) {
+        message +=
+          ' ATTENTION: Fichier separe par des TABS, mais le backend attend des VIRGULES!';
+        this.showToastMessage(message, 'warning');
+      } else {
+        message += ' Format correct (separe par des virgules)';
+        this.showToastMessage(message, 'success');
+      }
+    };
+    reader.readAsText(this.selectedFile);
   }
 }
