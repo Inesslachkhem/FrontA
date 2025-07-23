@@ -17,7 +17,8 @@ import { UserProfileComponent } from './pages/users/user-profile.component';
 import { AuthGuard } from './guards/auth.guard';
 import { VerifyCodeComponent } from './components/verify-code/verify-code.component';
 import { ChatComponent } from './pages/chat/chat.component';
-import { PromotionsComponent } from './pages/promotions/promotions.component';
+import { AiPromotionsComponent } from './components/ai-promotions/ai-promotions-new.component';
+
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -31,13 +32,13 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'articles', component: ArticleListComponent },
       { path: 'categories', component: CategoryListComponent },
-      { path: 'promotions', component: PromotionsComponent },
       { path: 'ventes', component: VenteListComponent },
       { path: 'stock', component: StockListComponent },
       { path: 'department', component: DepartmentComponent },
       { path: 'etablissement', component: EtablissementComponent },
       { path: 'users', component: UserManagementComponent },
       { path: 'chat', component: ChatComponent },
+      { path: 'ai-promotions', component: AiPromotionsComponent },
       { path: 'profile', component: UserProfileComponent },
       { path: 'admin/profile', component: UserProfileComponent },
       { path: 'admin/stats', component: DashboardComponent }, // Reuse dashboard for now

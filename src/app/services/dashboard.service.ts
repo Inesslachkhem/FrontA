@@ -17,10 +17,6 @@ export class DashboardService {
   }
 
   // Individual endpoint methods (if needed separately)
-  getAcceptedPromotionsRevenue(): Observable<number> {
-    return this.http.get<number>(`${this.apiUrl}/accepted-promotions-revenue`);
-  }
-
   getCategoriesCount(): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/categories/count`);
   }

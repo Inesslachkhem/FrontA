@@ -131,6 +131,14 @@ export class SignalRService {
     if (!this.hubConnection) return;
 
     this.hubConnection.on('ReceiveMessage', (message: Message) => {
+      console.log('📡 SignalR received message:', {
+        id: message.id,
+        senderId: message.senderId,
+        senderName: message.senderName,
+        conversationId: message.conversationId,
+        isOwnMessage: message.isOwnMessage,
+        content: message.content?.substring(0, 50) + (message.content?.length > 50 ? '...' : '')
+      });
       this.messageReceived$.next(message);
     });
 

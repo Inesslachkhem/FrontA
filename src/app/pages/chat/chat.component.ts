@@ -5,6 +5,7 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -108,7 +109,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     private chatService: ChatService,
     private signalRService: SignalRService,
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -143,6 +145,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         console.error('No current user found');
         return;
       }
+
+      console.log('👤 Current user initialized:', {
+        id: this.currentUser.id,
+        nom: this.currentUser.nom,
+        prenom: this.currentUser.prenom,
+        email: this.currentUser.email
+      });
 
       // Initialize SignalR connection
       const token = this.authService.tokenValue;
@@ -240,11 +249,78 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private async loadConversations(): Promise<void> {
     try {
-      this.conversations =
-        (await this.chatService.getConversations().toPromise()) || [];
+      const rawConversations = (await this.chatService.getConversations().toPromise()) || [];
+      
+      // Clean and validate conversation data
+      this.conversations = this.cleanAndValidateConversations(rawConversations);
+      
+      console.log('📋 Conversations loaded:', {
+        count: this.conversations.length,
+        currentUserId: this.currentUser?.id,
+        conversations: this.conversations.map(conv => ({
+          id: conv.id,
+          title: conv.title,
+          isGroup: conv.isGroup,
+          participants: conv.participants.map(p => ({
+            id: p.id,
+            nom: p.nom,
+            prenom: p.prenom,
+            email: p.email
+          }))
+        }))
+      });
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
+  }
+
+  // Utility method to clean and validate conversation data
+  private cleanAndValidateConversations(conversations: Conversation[]): Conversation[] {
+    return conversations.map(conv => {
+      // Ensure participants array exists and is valid
+      if (!conv.participants || !Array.isArray(conv.participants)) {
+        console.warn('🧹 Invalid participants array for conversation:', conv.id);
+        conv.participants = [];
+      }
+
+      // For direct conversations, ensure we have exactly 2 participants
+      if (!conv.isGroup) {
+        console.log('🔍 Validating direct conversation:', {
+          id: conv.id,
+          participantCount: conv.participants.length,
+          currentUserId: this.currentUser?.id,
+          participants: conv.participants.map(p => ({ id: p.id, nom: p.nom, prenom: p.prenom }))
+        });
+
+        // If we don't have exactly 2 participants, this is a problem
+        if (conv.participants.length !== 2) {
+          console.error('❌ Direct conversation should have exactly 2 participants:', {
+            conversationId: conv.id,
+            actualCount: conv.participants.length,
+            participants: conv.participants
+          });
+        }
+
+        // Ensure current user is one of the participants
+        const currentUserInParticipants = conv.participants.find(p => p.id === this.currentUser?.id);
+        if (!currentUserInParticipants && this.currentUser) {
+          console.warn('⚠️ Current user not found in participants, adding:', {
+            conversationId: conv.id,
+            currentUserId: this.currentUser.id,
+            currentUser: {
+              id: this.currentUser.id,
+              nom: this.currentUser.nom,
+              prenom: this.currentUser.prenom,
+              email: this.currentUser.email
+            }
+          });
+          // Add current user to participants if missing
+          conv.participants.push(this.currentUser);
+        }
+      }
+
+      return conv;
+    });
   }
 
   private async loadAvailableUsers(): Promise<void> {
@@ -300,13 +376,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
 
       // Prepend older messages to the beginning (older messages appear at top)
-      // Ensure isOwnMessage is correctly set for loaded messages
-      const messagesWithCorrectOwnership = newMessages.map((msg) => ({
-        ...msg,
-        isOwnMessage: this.currentUser
-          ? msg.senderId === this.currentUser.id
-          : false,
-      }));
+      // CRITICAL FIX: Ensure isOwnMessage is correctly set for loaded messages
+      const messagesWithCorrectOwnership = newMessages.map((msg) => {
+        return this.ensureCorrectMessageOwnership(msg);
+      });
 
       this.messages = [...messagesWithCorrectOwnership, ...this.messages];
       this.currentPage++;
@@ -753,21 +826,44 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private handleNewMessage(message: Message): void {
+    console.log('📨 Handling new message:', {
+      messageId: message.id,
+      senderId: message.senderId,
+      currentUserId: this.currentUser?.id,
+      originalIsOwnMessage: message.isOwnMessage,
+      conversationId: message.conversationId,
+      selectedConversationId: this.selectedConversation?.id
+    });
+
     if (message.conversationId === this.selectedConversation?.id) {
       const wasScrolledToBottom = this.isScrolledToBottom();
 
-      // Ensure isOwnMessage is correctly set based on current user
-      message.isOwnMessage = this.currentUser
-        ? message.senderId === this.currentUser.id
-        : false;
+      // CRITICAL FIX: Use utility method to ensure correct ownership
+      const correctedMessage = this.ensureCorrectMessageOwnership(message);
 
-      this.messages.push(message);
+      console.log('📨 Message ownership corrected:', {
+        senderId: message.senderId,
+        currentUserId: this.currentUser?.id,
+        originalIsOwnMessage: message.isOwnMessage,
+        correctedIsOwnMessage: correctedMessage.isOwnMessage,
+        wasScrolledToBottom: wasScrolledToBottom
+      });
 
-      // Only auto-scroll if user was already at bottom or it's their own message
-      if (wasScrolledToBottom || message.isOwnMessage) {
-        setTimeout(() => this.scrollToBottom(), 100);
-      }
+      // Create a new array to trigger change detection
+      this.messages = [...this.messages, correctedMessage];
+
+      // Force change detection immediately
+      this.cdr.detectChanges();
+
+      // Force change detection and scrolling
+      setTimeout(() => {
+        // Only auto-scroll if user was already at bottom or it's their own message
+        if (wasScrolledToBottom || correctedMessage.isOwnMessage) {
+          this.scrollToBottom();
+        }
+      }, 50);
     }
+    
     // Update conversation list with new message
     this.loadConversations();
   }
@@ -877,9 +973,28 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       return conversation.title.charAt(0).toUpperCase();
     } else {
       // For direct conversations, get the other participant's name
+      console.log('🎭 Getting conversation avatar:', {
+        conversationId: conversation.id,
+        currentUserId: this.currentUser?.id,
+        participants: conversation.participants.map(p => ({
+          id: p.id,
+          nom: p.nom,
+          prenom: p.prenom
+        }))
+      });
+
       const otherParticipant = conversation.participants.find(
         (p) => p.id !== this.currentUser?.id
       );
+
+      console.log('👤 Avatar other participant:', {
+        otherParticipant: otherParticipant ? {
+          id: otherParticipant.id,
+          nom: otherParticipant.nom,
+          prenom: otherParticipant.prenom
+        } : null
+      });
+
       return otherParticipant
         ? `${otherParticipant.prenom.charAt(0)}${otherParticipant.nom.charAt(
             0
@@ -893,9 +1008,31 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       return conversation.title;
     } else {
       // For direct conversations, show the other participant's name
+      console.log('🏷️ Getting conversation title:', {
+        conversationId: conversation.id,
+        currentUserId: this.currentUser?.id,
+        participants: conversation.participants.map(p => ({
+          id: p.id,
+          nom: p.nom,
+          prenom: p.prenom,
+          email: p.email
+        }))
+      });
+
       const otherParticipant = conversation.participants.find(
         (p) => p.id !== this.currentUser?.id
       );
+
+      console.log('👤 Other participant found:', {
+        otherParticipant: otherParticipant ? {
+          id: otherParticipant.id,
+          nom: otherParticipant.nom,
+          prenom: otherParticipant.prenom,
+          email: otherParticipant.email
+        } : null,
+        currentUserId: this.currentUser?.id
+      });
+
       return otherParticipant
         ? `${otherParticipant.prenom} ${otherParticipant.nom}`
         : 'Unknown User';
@@ -1026,5 +1163,23 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Performance optimization for message list
   trackMessage(index: number, message: Message): number {
     return message.id;
+  }
+
+  // Utility method to ensure correct message ownership
+  private ensureCorrectMessageOwnership(message: Message): Message {
+    const isOwn = this.currentUser ? message.senderId === this.currentUser.id : false;
+    
+    console.log('🔧 Ensuring message ownership:', {
+      messageId: message.id,
+      senderId: message.senderId,
+      currentUserId: this.currentUser?.id,
+      originalIsOwnMessage: message.isOwnMessage,
+      calculatedIsOwnMessage: isOwn
+    });
+    
+    return {
+      ...message,
+      isOwnMessage: isOwn
+    };
   }
 }

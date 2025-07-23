@@ -2350,8 +2350,58 @@ export class StockListComponent implements OnInit {
   }
 
   resendAlertEmails() {
-    // Implementation for resending alert emails
-    this.showToastMessage("Emails d'alerte renvoyés!", 'success');
+    console.log('🔄 Renvoi de tous les emails d\'alerte...');
+    
+    if (this.stockAlerts.length === 0) {
+      this.showToastMessage('Aucune alerte à envoyer', 'info');
+      return;
+    }
+
+    let emailsSent = 0;
+    let emailsError = 0;
+
+    this.stockAlerts.forEach(alert => {
+      if (!alert.dismissed) {
+        alert.emailSent = false; // Reset du flag pour permettre le renvoi
+        
+        this.http.post<any>(`${this.apiUrl}/send-alert`, alert).subscribe({
+          next: (response: any) => {
+            console.log('✅ Email renvoyé avec succès pour:', alert.stock.article?.libelle);
+            
+            // Mettre à jour le flag emailSent
+            const alertIndex = this.stockAlerts.findIndex(a => a.id === alert.id);
+            if (alertIndex !== -1) {
+              this.stockAlerts[alertIndex].emailSent = true;
+            }
+            
+            emailsSent++;
+            
+            // Message final quand tous les emails sont traités
+            if (emailsSent + emailsError === this.stockAlerts.filter(a => !a.dismissed).length) {
+              if (emailsError === 0) {
+                this.showToastMessage(`${emailsSent} emails d'alerte renvoyés avec succès!`, 'success');
+              } else {
+                this.showToastMessage(`${emailsSent} emails envoyés, ${emailsError} erreurs`, 'warning');
+              }
+            }
+          },
+          error: (error: any) => {
+            console.error('❌ Erreur renvoi email pour:', alert.stock.article?.libelle, error);
+            
+            emailsError++;
+            
+            // Message final quand tous les emails sont traités
+            if (emailsSent + emailsError === this.stockAlerts.filter(a => !a.dismissed).length) {
+              if (emailsSent === 0) {
+                this.showToastMessage(`Erreur lors du renvoi des emails: ${error.error?.message || 'Erreur inconnue'}`, 'error');
+              } else {
+                this.showToastMessage(`${emailsSent} emails envoyés, ${emailsError} erreurs`, 'warning');
+              }
+            }
+          }
+        });
+      }
+    });
   }
 
   // Drag and drop methods
@@ -2390,9 +2440,9 @@ export class StockListComponent implements OnInit {
 
     this.stocks.forEach((stock) => {
       if (stock.quantitePhysique === 0) {
-        this.stockAlerts.push({
+        const alert = {
           id: 'out_' + stock.id,
-          type: 'out_of_stock',
+          type: 'out_of_stock' as const,
           title: 'Rupture de Stock',
           message:
             "L'article " +
@@ -2402,11 +2452,16 @@ export class StockListComponent implements OnInit {
           timestamp: new Date(),
           emailSent: false,
           dismissed: false,
-        });
+        };
+        this.stockAlerts.push(alert);
+        
+        // Envoyer automatiquement l'email pour rupture de stock
+        this.sendAlertEmail(alert);
+        
       } else if (stock.quantitePhysique <= stock.stockMin) {
-        this.stockAlerts.push({
+        const alert = {
           id: 'low_' + stock.id,
-          type: 'low_stock',
+          type: 'low_stock' as const,
           title: 'Stock Faible',
           message:
             "L'article " +
@@ -2416,7 +2471,53 @@ export class StockListComponent implements OnInit {
           timestamp: new Date(),
           emailSent: false,
           dismissed: false,
-        });
+        };
+        this.stockAlerts.push(alert);
+        
+        // Envoyer automatiquement l'email pour stock faible
+        this.sendAlertEmail(alert);
+      }
+    });
+  }
+
+  // Nouvelle méthode pour envoyer l'email d'alerte
+  sendAlertEmail(alert: StockAlert) {
+    console.log('📧 Envoi email pour alerte:', alert.type, alert.stock.article?.libelle);
+    
+    this.http.post<any>(`${this.apiUrl}/send-alert`, alert).subscribe({
+      next: (response: any) => {
+        console.log('✅ Email envoyé avec succès:', response);
+        
+        // Mettre à jour le flag emailSent
+        const alertIndex = this.stockAlerts.findIndex(a => a.id === alert.id);
+        if (alertIndex !== -1) {
+          this.stockAlerts[alertIndex].emailSent = true;
+        }
+        
+        // Afficher un message de succès
+        const articleName = alert.stock.article?.libelle || 'Article inconnu';
+        const alertTypeText = alert.type === 'out_of_stock' ? 'rupture de stock' : 'stock faible';
+        this.showToastMessage(
+          `Email d'alerte ${alertTypeText} envoyé pour ${articleName}`, 
+          'success'
+        );
+      },
+      error: (error: any) => {
+        console.error('❌ Erreur envoi email:', error);
+        
+        // Garder emailSent à false en cas d'erreur
+        const alertIndex = this.stockAlerts.findIndex(a => a.id === alert.id);
+        if (alertIndex !== -1) {
+          this.stockAlerts[alertIndex].emailSent = false;
+        }
+        
+        // Afficher un message d'erreur
+        const articleName = alert.stock.article?.libelle || 'Article inconnu';
+        const alertTypeText = alert.type === 'out_of_stock' ? 'rupture de stock' : 'stock faible';
+        this.showToastMessage(
+          `Erreur lors de l'envoi de l'email d'alerte ${alertTypeText} pour ${articleName}: ${error.error?.message || error.message || 'Erreur inconnue'}`, 
+          'error'
+        );
       }
     });
   }

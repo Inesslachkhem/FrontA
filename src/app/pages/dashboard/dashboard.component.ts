@@ -12,11 +12,6 @@ import {
 } from 'chart.js';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardData } from '../../models/dashboard.model';
-import {
-  PromotionAiService,
-  PromotionCategory,
-  PromotionGenerationResponse,
-} from '../../services/promotion-ai.service';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 
 Chart.register(...registerables);
@@ -169,21 +164,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   };
 
   constructor(
-    private dashboardService: DashboardService,
-    private promotionAiService: PromotionAiService
+    private dashboardService: DashboardService
   ) {}
-
-  // AI Promotion properties
-  categories: PromotionCategory[] = [];
-  selectedCategory: string = '';
-  aiServiceConnected = false;
-  promotionLoading = false;
-  promotionResults: PromotionGenerationResponse | null = null;
-  showPromotionModal = false;
 
   ngOnInit(): void {
     this.loadDashboardData();
-    this.loadPromotionCategories();
     // Trigger card animations after component loads
     setTimeout(() => {
       this.animateCards = true;
@@ -322,60 +307,4 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // AI Promotion Methods
-  loadPromotionCategories(): void {
-    this.promotionAiService
-      .getCategories()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.categories = response.categories;
-          this.aiServiceConnected = true;
-          if (this.categories.length > 0) {
-            this.selectedCategory = this.categories[0].name;
-          }
-        },
-        error: (error) => {
-          console.warn('AI service not available:', error);
-          this.aiServiceConnected = false;
-        },
-      });
-  }
-
-  generatePromotions(): void {
-    if (!this.selectedCategory) {
-      return;
-    }
-
-    this.promotionLoading = true;
-    const startDate = new Date().toISOString().split('T')[0];
-
-    this.promotionAiService
-      .generatePromotions(this.selectedCategory, startDate)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.promotionResults = response;
-          this.showPromotionModal = true;
-          this.promotionLoading = false;
-
-          // Reload dashboard data to reflect any new promotions
-          this.loadDashboardData();
-        },
-        error: (error) => {
-          console.error('Error generating promotions:', error);
-          this.promotionLoading = false;
-          // You could add a toast notification here
-        },
-      });
-  }
-
-  closePromotionModal(): void {
-    this.showPromotionModal = false;
-    this.promotionResults = null;
-  }
-
-  onCategoryChange(event: any): void {
-    this.selectedCategory = event.target.value;
-  }
 }

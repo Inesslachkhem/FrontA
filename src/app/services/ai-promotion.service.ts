@@ -1,246 +1,288 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 
-export interface AIRecommendation {
-  should_promote: boolean;
-  confidence_score: number;
-  optimal_discount_rate: number;
-  predicted_sales_lift_percent: number;
-  predicted_revenue_impact: number;
-  risk_level: string;
-  key_factors: string[];
-  recommendation_reason: string;
+export interface AIPromotion {
+  article_id: number;
+  article_name: string;
+  current_price: number;
+  promotional_price: number;
+  promotion_percentage: number;
+  current_stock: number;
+  prediction_method: 'ai' | 'classic';
+  scores: {
+    stock_score: number;
+    elasticity_score: number;
+    sales_score: number;
+    promotion_score: number;
+    final_score: number;
+  };
+  impact: {
+    current_monthly_sales_volume: number;
+    predicted_monthly_sales_volume: number;
+    volume_change_percentage: number;
+    current_monthly_revenue: number;
+    predicted_monthly_revenue: number;
+    revenue_change_percentage: number;
+    profit_change_percentage: number;
+  };
+  recommendation: string;
+  risk_level: 'low' | 'medium' | 'high';
+  created_at: string;
 }
 
-export interface KPIData {
-  rotation_rate: number;
-  sell_through_rate_percent: number;
-  stock_coverage_days: number;
-  inventory_status: string;
+export interface Category {
+  id: number;
+  name: string;
+  description: string;
 }
 
-export interface AIRecommendationResponse {
-  status: string;
-  product_id: number;
-  product_name: string;
-  ai_recommendation: AIRecommendation;
-  current_kpis: KPIData;
-  prediction_timestamp: string;
+export interface PromotionResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    promotions: AIPromotion[];
+    statistics: {
+      total_promotions: number;
+      average_promotion: number;
+      total_revenue_impact: number;
+      ai_predictions: number;
+      classic_predictions: number;
+    };
+    category_id: number;
+    generated_at: string;
+    file_saved: string;
+  };
+  error?: string;
 }
 
-export interface BatchRecommendationResponse {
-  status: string;
-  total_products: number;
-  successful_predictions: number;
-  recommendations: AIRecommendation[];
-  prediction_timestamp: string;
-}
-
-export interface ModelInfo {
-  status: string;
-  model_trained: boolean;
-  model_version: string;
-  features_used: string[];
-  algorithms: string[];
-  last_training?: string;
-  prediction_accuracy?: number;
+export interface ModelStatus {
+  success: boolean;
+  model_initialized: boolean;
+  is_trained: boolean;
+  metrics: any;
+  best_model: string;
+  message: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AIPromotionService {
-  private readonly aiApiUrl = environment.aiApiUrl || 'http://localhost:5001/ai';
+  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  
+  private promotionsSubject = new BehaviorSubject<AIPromotion[]>([]);
+  public promotions$ = this.promotionsSubject.asObservable();
+  
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  public loading$ = this.loadingSubject.asObservable();
+  
+  private statisticsSubject = new BehaviorSubject<any>(null);
+  public statistics$ = this.statisticsSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Get model information and status
-   */
-  getModelInfo(): Observable<ModelInfo> {
-    return this.http.get<ModelInfo>(`${this.aiApiUrl}/model/info`)
-      .pipe(catchError(this.handleError));
-  }
-
-  /**
-   * Get AI promotion recommendation for a single product
-   */
-  getPromotionRecommendation(productData: any): Observable<AIRecommendationResponse> {
-    const payload = {
-      product_id: productData.id || productData.product_id,
-      product_name: productData.name || productData.product_name || productData.libelle,
-      current_price: productData.price || productData.current_price || productData.prix_vente_tnd,
-      current_stock: productData.stock || productData.current_stock || productData.quantite_physique,
-      total_sales_90d: productData.total_sales_90d || this.estimateSales(productData),
-      total_revenue_90d: productData.total_revenue_90d || this.estimateRevenue(productData),
-      total_purchased_90d: productData.total_purchased_90d || this.estimatePurchases(productData),
-      sales_last_30d: productData.sales_last_30d || this.estimateRecentSales(productData),
-      sales_previous_30d: productData.sales_previous_30d || this.estimatePreviousSales(productData),
-      days_since_last_promo: productData.days_since_last_promo || 365,
-      last_promo_discount: productData.last_promo_discount || 0,
-      promo_count_6months: productData.promo_count_6months || 0,
-      category_id: productData.category_id || productData.id_categorie || 1
+  private getHttpOptions() {
+    return {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      })
     };
-
-    return this.http.post<AIRecommendationResponse>(`${this.aiApiUrl}/promotion/predict`, payload)
-      .pipe(catchError(this.handleError));
   }
 
   /**
-   * Get AI recommendations for multiple products
+   * Vérifie l'état de l'API Flask
    */
-  getBatchRecommendations(products: any[], maxProducts: number = 50): Observable<BatchRecommendationResponse> {
-    const payload = {
-      products: products.slice(0, maxProducts).map(product => ({
-        product_id: product.id || product.product_id,
-        product_name: product.name || product.product_name || product.libelle,
-        current_price: product.price || product.current_price || product.prix_vente_tnd,
-        current_stock: product.stock || product.current_stock || product.quantite_physique,
-        total_sales_90d: product.total_sales_90d || this.estimateSales(product),
-        total_revenue_90d: product.total_revenue_90d || this.estimateRevenue(product),
-        total_purchased_90d: product.total_purchased_90d || this.estimatePurchases(product),
-        sales_last_30d: product.sales_last_30d || this.estimateRecentSales(product),
-        sales_previous_30d: product.sales_previous_30d || this.estimatePreviousSales(product),
-        days_since_last_promo: product.days_since_last_promo || 365,
-        last_promo_discount: product.last_promo_discount || 0,
-        promo_count_6months: product.promo_count_6months || 0,
-        category_id: product.category_id || product.id_categorie || 1
-      })),
-      max_products: maxProducts
-    };
-
-    return this.http.post<BatchRecommendationResponse>(`${this.aiApiUrl}/promotion/batch`, payload)
-      .pipe(catchError(this.handleError));
+  checkAPIHealth(): Observable<any> {
+    return this.http.get(`${this.API_BASE_URL}/health`)
+      .pipe(
+        catchError(this.handleError)
+      );
   }
 
   /**
-   * Calculate retail KPIs for a product
+   * Récupère les catégories disponibles
    */
-  calculateKPIs(productData: any): Observable<any> {
-    const payload = {
-      product_id: productData.id || productData.product_id,
-      total_sales_90d: productData.total_sales_90d || this.estimateSales(productData),
-      total_purchased_90d: productData.total_purchased_90d || this.estimatePurchases(productData),
-      current_stock: productData.stock || productData.current_stock || productData.quantite_physique,
-      sales_last_30d: productData.sales_last_30d || this.estimateRecentSales(productData),
-      sales_previous_30d: productData.sales_previous_30d || this.estimatePreviousSales(productData),
-      current_price: productData.price || productData.current_price || productData.prix_vente_tnd
-    };
-
-    return this.http.post<any>(`${this.aiApiUrl}/kpis/calculate`, payload)
-      .pipe(catchError(this.handleError));
+  getCategories(): Observable<Category[]> {
+    return this.http.get<any>(`${this.API_BASE_URL}/categories`)
+      .pipe(
+        map(response => response.success ? response.categories : []),
+        catchError(this.handleError)
+      );
   }
 
   /**
-   * Train or retrain the AI model
+   * Génère des promotions IA pour une catégorie
    */
-  trainModel(monthsBack: number = 12, forceRetrain: boolean = false): Observable<any> {
-    const payload = {
-      months_back: monthsBack,
-      force_retrain: forceRetrain
-    };
-
-    return this.http.post<any>(`${this.aiApiUrl}/model/train`, payload)
-      .pipe(catchError(this.handleError));
+  generatePromotions(categoryId: number): Observable<PromotionResponse> {
+    this.loadingSubject.next(true);
+    
+    const payload = { category_id: categoryId };
+    
+    return this.http.post<PromotionResponse>(
+      `${this.API_BASE_URL}/promotions/generate`,
+      payload,
+      this.getHttpOptions()
+    ).pipe(
+      map(response => {
+        if (response.success && response.data) {
+          this.promotionsSubject.next(response.data.promotions);
+          this.statisticsSubject.next(response.data.statistics);
+        }
+        this.loadingSubject.next(false);
+        return response;
+      }),
+      catchError(error => {
+        this.loadingSubject.next(false);
+        return this.handleError(error);
+      })
+    );
   }
 
   /**
-   * Check AI API health
+   * Récupère l'historique des promotions générées
    */
-  checkHealth(): Observable<any> {
-    return this.http.get<any>(`${this.aiApiUrl}/health`)
-      .pipe(catchError(this.handleError));
+  getPromotionsHistory(): Observable<any[]> {
+    return this.http.get<any>(`${this.API_BASE_URL}/promotions/history`)
+      .pipe(
+        map(response => response.success ? response.history : []),
+        catchError(this.handleError)
+      );
   }
 
   /**
-   * Get confidence level class for UI styling
+   * Récupère le contenu d'un fichier de promotions spécifique
    */
-  getConfidenceClass(confidence: number): string {
-    if (confidence >= 0.9) return 'confidence-excellent';
-    if (confidence >= 0.8) return 'confidence-good';
-    if (confidence >= 0.7) return 'confidence-fair';
-    return 'confidence-poor';
+  getPromotionFile(filename: string): Observable<AIPromotion[]> {
+    return this.http.get<any>(`${this.API_BASE_URL}/promotions/file/${filename}`)
+      .pipe(
+        map(response => {
+          if (response.success && response.data) {
+            this.promotionsSubject.next(response.data);
+            return response.data;
+          }
+          return [];
+        }),
+        catchError(this.handleError)
+      );
   }
 
   /**
-   * Get risk level class for UI styling
+   * Récupère l'état du modèle IA
    */
-  getRiskClass(riskLevel: string): string {
-    switch (riskLevel.toLowerCase()) {
-      case 'low': return 'risk-low';
-      case 'medium': return 'risk-medium';
-      case 'high': return 'risk-high';
-      default: return 'risk-unknown';
-    }
+  getModelStatus(): Observable<ModelStatus> {
+    return this.http.get<ModelStatus>(`${this.API_BASE_URL}/model/status`)
+      .pipe(
+        catchError(this.handleError)
+      );
   }
 
   /**
-   * Format percentage for display
+   * Réentraîne le modèle IA
    */
-  formatPercent(value: number): string {
-    return `${(value * 100).toFixed(1)}%`;
+  retrainModel(useSimulation: boolean = true): Observable<any> {
+    const payload = { use_simulation: useSimulation };
+    
+    return this.http.post<any>(
+      `${this.API_BASE_URL}/model/retrain`,
+      payload,
+      this.getHttpOptions()
+    ).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
-   * Format currency for display
+   * Filtre les promotions par niveau de risque
    */
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'TND'
-    }).format(value);
+  filterPromotionsByRisk(riskLevel: 'low' | 'medium' | 'high'): Observable<AIPromotion[]> {
+    return this.promotions$.pipe(
+      map(promotions => promotions.filter(p => p.risk_level === riskLevel))
+    );
   }
 
-  // Private helper methods for estimating missing data
-  private estimateSales(product: any): number {
-    // Simple estimation based on stock and product type
-    const stock = product.stock || product.current_stock || product.quantite_physique || 0;
-    return Math.max(0, Math.floor(stock * 0.3)); // Assume 30% of stock sold in 90 days
+  /**
+   * Filtre les promotions par méthode de prédiction
+   */
+  filterPromotionsByMethod(method: 'ai' | 'classic'): Observable<AIPromotion[]> {
+    return this.promotions$.pipe(
+      map(promotions => promotions.filter(p => p.prediction_method === method))
+    );
   }
 
-  private estimateRevenue(product: any): number {
-    const sales = this.estimateSales(product);
-    const price = product.price || product.current_price || product.prix_vente_tnd || 0;
-    return sales * price;
+  /**
+   * Trie les promotions par pourcentage de promotion (décroissant)
+   */
+  sortPromotionsByDiscount(): Observable<AIPromotion[]> {
+    return this.promotions$.pipe(
+      map(promotions => [...promotions].sort((a, b) => b.promotion_percentage - a.promotion_percentage))
+    );
   }
 
-  private estimatePurchases(product: any): number {
-    const stock = product.stock || product.current_stock || product.quantite_physique || 0;
-    const sales = this.estimateSales(product);
-    return stock + sales; // Estimate total purchases as current stock + sales
+  /**
+   * Trie les promotions par impact sur le revenu (décroissant)
+   */
+  sortPromotionsByRevenueImpact(): Observable<AIPromotion[]> {
+    return this.promotions$.pipe(
+      map(promotions => [...promotions].sort((a, b) => b.impact.revenue_change_percentage - a.impact.revenue_change_percentage))
+    );
   }
 
-  private estimateRecentSales(product: any): number {
-    const totalSales = this.estimateSales(product);
-    return Math.floor(totalSales * 0.4); // Assume 40% of sales in last 30 days
+  /**
+   * Récupère les promotions les plus rentables (top N)
+   */
+  getTopProfitablePromotions(limit: number = 5): Observable<AIPromotion[]> {
+    return this.sortPromotionsByRevenueImpact().pipe(
+      map(promotions => promotions.slice(0, limit))
+    );
   }
 
-  private estimatePreviousSales(product: any): number {
-    const totalSales = this.estimateSales(product);
-    return Math.floor(totalSales * 0.35); // Assume 35% of sales in previous 30 days
+  /**
+   * Calcule les statistiques globales des promotions
+   */
+  calculatePromotionStats(): Observable<any> {
+    return this.promotions$.pipe(
+      map(promotions => {
+        if (promotions.length === 0) return null;
+
+        const totalRevenue = promotions.reduce((sum, p) => sum + p.impact.current_monthly_revenue, 0);
+        const totalPredictedRevenue = promotions.reduce((sum, p) => sum + p.impact.predicted_monthly_revenue, 0);
+        const avgPromotion = promotions.reduce((sum, p) => sum + p.promotion_percentage, 0) / promotions.length;
+        
+        return {
+          total_promotions: promotions.length,
+          average_promotion: Math.round(avgPromotion * 10) / 10,
+          total_revenue_impact: Math.round((totalPredictedRevenue - totalRevenue) * 100) / 100,
+          revenue_impact_percentage: totalRevenue > 0 ? Math.round(((totalPredictedRevenue - totalRevenue) / totalRevenue * 100) * 10) / 10 : 0,
+          ai_predictions: promotions.filter(p => p.prediction_method === 'ai').length,
+          classic_predictions: promotions.filter(p => p.prediction_method === 'classic').length,
+          high_risk_count: promotions.filter(p => p.risk_level === 'high').length,
+          medium_risk_count: promotions.filter(p => p.risk_level === 'medium').length,
+          low_risk_count: promotions.filter(p => p.risk_level === 'low').length
+        };
+      })
+    );
   }
 
-  private handleError(error: HttpErrorResponse) {
-    let errorMessage = 'An error occurred';
+  private handleError(error: any): Observable<never> {
+    console.error('Erreur API AI Promotion:', error);
+    
+    let errorMessage = 'Une erreur est survenue';
     
     if (error.error instanceof ErrorEvent) {
-      // Client-side error
-      errorMessage = `Error: ${error.error.message}`;
+      // Erreur côté client
+      errorMessage = `Erreur: ${error.error.message}`;
     } else {
-      // Server-side error
-      errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
-      
+      // Erreur côté serveur
       if (error.status === 0) {
-        errorMessage = 'Unable to connect to AI service. Please check if the AI API is running on http://localhost:5001';
-      } else if (error.status === 500) {
-        errorMessage = 'AI service internal error. Please check the model training status.';
+        errorMessage = 'Impossible de joindre le service Flask. Vérifiez qu\'il est démarré sur le port 5000.';
+      } else {
+        errorMessage = error.error?.message || `Erreur ${error.status}: ${error.statusText}`;
       }
     }
     
-    console.error('AI Service Error:', errorMessage);
-    return throwError(errorMessage);
+    return throwError(() => new Error(errorMessage));
   }
 }

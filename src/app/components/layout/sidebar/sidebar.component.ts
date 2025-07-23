@@ -44,9 +44,9 @@ export class SidebarComponent implements OnInit {
       expanded: false,
     },
     {
-      label: 'Promotions',
-      icon: 'fas fa-percentage',
-      route: '/promotions',
+      label: 'Promotions IA',
+      icon: 'fas fa-brain',
+      route: '/ai-promotions',
     },
     {
       label: 'Ventes',
