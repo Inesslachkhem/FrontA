@@ -19,6 +19,13 @@ export interface Promotion {
   current_usage?: number;
   revenue_impact?: number;
   is_ai_generated?: boolean;
+  expected_volume_impact?: number;
+  expected_revenue_impact?: number;
+  revenue_change_percentage?: number;
+  volume_change_percentage?: number;
+  recommendations?: string;
+  ai_recommendations?: string;
+  risk_level?: string;
 }
 
 export interface PromotionCreateRequest {
@@ -50,9 +57,10 @@ export interface PromotionApprovalRequest {
 
 export interface AIPromotionGenerationRequest {
   category_id?: number;
-  min_stock?: number;
-  max_promotions?: number;
   prediction_method?: 'ai' | 'classic';
+  start_date?: string;
+  end_date?: string;
+  duration_days?: number;
 }
 
 export interface PromotionListResponse {
