@@ -7,12 +7,14 @@ yarn-error.log*
 # Fichiers de build et de distribution
 dist
 build
+.angular
 
 # Fichiers de test
 coverage
 *.spec.ts
 karma.conf.js
 src/**/*.spec.ts
+e2e
 
 # Fichiers d'environnement et de configuration locale
 .env
@@ -48,13 +50,18 @@ temp
 README.md
 .github
 
-# Fichiers Angular spécifiques
-.angular
-.browserslistrc
-e2e
+# Scripts PowerShell et shell (garder seulement les nécessaires)
+test-*.ps1
+diagnostic-*.ps1
+chat-fix-*.ps1
+email-alerts-fix.ps1
+bundle-fix-summary.ps1
+test-conversation-fix.ps1
+test-email-fix.ps1
+test-chat-positioning.ps1
 
-# Scripts PowerShell (spécifiques à votre projet)
-*.ps1
+# Scripts de test Docker (garder pour debug)
+# test-docker.sh
 
 # Fichiers Python (flask service)
 *.py
@@ -71,3 +78,6 @@ requirements.txt
 # Documentation
 docs
 *.md
+
+# Fichiers Docker alternatifs (garder seulement un)
+# Dockerfile.simple

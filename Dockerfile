@@ -10,14 +10,17 @@ RUN apk add --no-cache git
 # Copier les fichiers package.json et package-lock.json (si disponible)
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production && npm cache clean --force
+# Installer les dépendances (y compris devDependencies pour le build)
+RUN npm ci && npm cache clean --force
+
+# Installer Angular CLI globalement
+RUN npm install -g @angular/cli@17.3.8
 
 # Copier le code source
 COPY . .
 
-# Construire l'application Angular pour la production avec configuration réseau
-RUN npm run build --configuration=production || npm run build
+# Construire l'application Angular pour la production
+RUN npm run build --configuration=production
 
 # Étape de production - utiliser une image plus légère
 FROM node:18-alpine AS production
@@ -32,14 +35,17 @@ RUN adduser -S angular -u 1001
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers package.json pour installer seulement les dépendances de production
+# Copier package.json pour les dépendances de production uniquement
 COPY package*.json ./
 
-# Installer seulement les dépendances de production
-RUN npm ci --only=production && npm cache clean --force
+# Installer seulement les dépendances de production nécessaires pour le serveur
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copier les fichiers construits depuis l'étape de build
 COPY --from=build --chown=angular:nodejs /app/dist ./dist
+
+# Copier le healthcheck
+COPY --chown=angular:nodejs healthcheck.js ./
 
 # Changer vers l'utilisateur non-root
 USER angular

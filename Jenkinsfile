@@ -71,16 +71,26 @@ pipeline {
         stage('Build Docker image') {
             steps {
                 script {
-                    // Construire l'image Docker
+                    // Construire l'image Docker avec gestion d'erreur
                     sh '''
                         # Vérifier que Docker est disponible
                         docker --version
                         
-                        # Construire l'image
-                        docker build \
-                            --build-arg NODE_ENV=production \
-                            --no-cache \
-                            -t $DOCKER_IMAGE:$DOCKER_TAG .
+                        # Utiliser le Dockerfile simple qui fonctionne mieux
+                        if [ -f "Dockerfile.simple" ]; then
+                            echo "Using Dockerfile.simple..."
+                            docker build \
+                                --build-arg NODE_ENV=production \
+                                --no-cache \
+                                -f Dockerfile.simple \
+                                -t $DOCKER_IMAGE:$DOCKER_TAG .
+                        else
+                            echo "Using standard Dockerfile..."
+                            docker build \
+                                --build-arg NODE_ENV=production \
+                                --no-cache \
+                                -t $DOCKER_IMAGE:$DOCKER_TAG .
+                        fi
                     '''
                 }
             }
