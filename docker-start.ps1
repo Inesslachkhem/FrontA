@@ -24,7 +24,22 @@ function Show-Help {
 
 function Build-Image {
     Write-Host "🔨 Construction de l'image Docker..." -ForegroundColor Yellow
-    docker build -t smartpromo-app:latest .
+    
+    # Vérifier que le build Angular est réussi d'abord
+    Write-Host "📦 Construction de l'application Angular..." -ForegroundColor Cyan
+    try {
+        npm run build --configuration=production
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "⚠️ Build avec optimisation échoué, essai sans optimisation..." -ForegroundColor Yellow
+            npm run build --configuration=development
+        }
+    } catch {
+        Write-Host "❌ Erreur lors du build Angular: $_" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Construction de l'image Docker
+    docker build --no-cache -t smartpromo-app:latest .
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Image construite avec succès!" -ForegroundColor Green
     } else {

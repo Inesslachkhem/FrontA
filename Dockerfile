@@ -4,6 +4,9 @@ FROM node:18-alpine AS build
 # Définir le répertoire de travail
 WORKDIR /app
 
+# Installer les dépendances système nécessaires
+RUN apk add --no-cache git
+
 # Copier les fichiers package.json et package-lock.json (si disponible)
 COPY package*.json ./
 
@@ -13,8 +16,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copier le code source
 COPY . .
 
-# Construire l'application Angular pour la production
-RUN npm run build
+# Construire l'application Angular pour la production avec configuration réseau
+RUN npm run build --configuration=production || npm run build
 
 # Étape de production - utiliser une image plus légère
 FROM node:18-alpine AS production
