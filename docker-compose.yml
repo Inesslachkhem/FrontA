@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  smartpromo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartpromo-frontend
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    restart: unless-stopped
+    networks:
+      - smartpromo-network
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  smartpromo-network:
+    driver: bridge
+
+volumes:
+  smartpromo-data:

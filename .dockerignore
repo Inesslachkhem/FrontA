@@ -1,0 +1,73 @@
+# Dépendances
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers de build et de distribution
+dist
+build
+
+# Fichiers de test
+coverage
+*.spec.ts
+karma.conf.js
+src/**/*.spec.ts
+
+# Fichiers d'environnement et de configuration locale
+.env
+.env.local
+.env.production
+.env.development
+
+# Fichiers IDE et éditeur
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+logs
+*.log
+
+# Fichiers temporaires
+tmp
+temp
+.tmp
+
+# Fichiers de version control
+.git
+.gitignore
+README.md
+.github
+
+# Fichiers Angular spécifiques
+.angular
+.browserslistrc
+e2e
+
+# Scripts PowerShell (spécifiques à votre projet)
+*.ps1
+
+# Fichiers Python (flask service)
+*.py
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+requirements.txt
+
+# Fichiers CSV de test
+*.csv
+
+# Documentation
+docs
+*.md
